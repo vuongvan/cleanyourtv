@@ -53,7 +53,7 @@ jobs:
       - name: Upload Add-ons APKs
         uses: actions/upload-artifact@v4
         with:
-          name: addons-release-apks
-          path: addons/*/build/outputs/apk/release/*.apk
-          if-no-files-found: ignore
-          
+         name: addons-release-apks
+         path: |
+           addons/*/app/build/outputs/apk/release/*.apk
+           addons/*/build/outputs/apk/release/*.apk
