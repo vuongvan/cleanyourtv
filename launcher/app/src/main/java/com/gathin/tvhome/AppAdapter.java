@@ -195,6 +195,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final boolean animations;
     private final boolean advancedEffects;
     private final boolean showLibrary;
+    /** Launcher settings, "Dock only": the rows under the dock are not in the list at all (see HomeChoices). */
+    private final boolean dockOnly;
     /** Packages with a leanback entry at the last reload(): their tiles launch with the leanback category. */
     private Set<String> leanbackPackages = new HashSet<>();
     private final boolean showHomeSettings;
@@ -224,7 +226,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.showLibrary = cfg.appLibrary;
         this.reducedMotion = cfg.reducedMotion;
         this.focusOvershoot = cfg.focusOvershoot;
-        this.rowsBelowDock = cfg.rowsBelowDock;
+        this.dockOnly = cfg.dockRow && HomeChoices.dockOnly(ctx);
+        this.rowsBelowDock = dockOnly ? 0 : cfg.rowsBelowDock;
         this.dockTitle = cfg.dockTitle;
         this.dockRow = cfg.dockRow;
         this.restNameAlpha = cfg.alwaysShowNames ? 0.75f : 0f;
@@ -498,14 +501,27 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
+    /**
+     * Dock-only mode hides every tile after the dock row, and the App library footer with them. Reorder and edit-dock
+     * mode need all the tiles to move things around, so they show everything again while they last.
+     */
+    private boolean dockOnlyActive() {
+        return dockOnly && !reordering;
+    }
+
+    boolean isDockOnly() {
+        return dockOnly;
+    }
+
     @Override
     public int getItemCount() {
+        if (dockOnlyActive()) return Math.min(items.size(), dockSize);
         return items.size() + (showLibrary ? 1 : 0);
     }
 
-    int appCount() { return items.size(); }
+    int appCount() { return dockOnlyActive() ? Math.min(items.size(), dockSize) : items.size(); }
 
-    boolean isLibraryAt(int position) { return showLibrary && position == items.size(); }
+    boolean isLibraryAt(int position) { return showLibrary && !dockOnlyActive() && position == items.size(); }
 
     @Override public int getItemViewType(int position) { return isLibraryAt(position) ? 1 : 0; }
 
