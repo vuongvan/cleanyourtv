@@ -145,4 +145,53 @@
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Last opened %1$s</string>
+
+    <!-- Lunar date under the clock (Vietnamese calendar), and its Launcher settings switch. %1$d day, %2$d month,
+         %3$s the leap-month mark or nothing, %4$s the stem and branch of the year. -->
+    <string name="lunar_date_format">Lunar date: %1$d/%2$d%3$s · %4$s</string>
+    <string name="lunar_leap"> (leap)</string>
+    <string name="lunar_state">Lunar date: %1$s</string>
+    <!-- Heavenly stems and earthly branches that name a lunar year (pinyin here; Vietnamese and Chinese in their folders). -->
+    <string-array name="lunar_can">
+        <item>Jia</item>
+        <item>Yi</item>
+        <item>Bing</item>
+        <item>Ding</item>
+        <item>Wu</item>
+        <item>Ji</item>
+        <item>Geng</item>
+        <item>Xin</item>
+        <item>Ren</item>
+        <item>Gui</item>
+    </string-array>
+    <string-array name="lunar_chi">
+        <item>Zi</item>
+        <item>Chou</item>
+        <item>Yin</item>
+        <item>Mao</item>
+        <item>Chen</item>
+        <item>Si</item>
+        <item>Wu</item>
+        <item>Wei</item>
+        <item>Shen</item>
+        <item>You</item>
+        <item>Xu</item>
+        <item>Hai</item>
+    </string-array>
+
+    <!-- Dock only, and where the dock sits (Launcher settings). -->
+    <string name="dock_only_state">Show only the dock: %1$s</string>
+    <string name="dock_only_hint">Hides every row under the dock. Open the other apps from the App library button at the top (it is shown automatically).</string>
+    <string name="dock_position_label">Dock position</string>
+    <string name="dock_position_default">Default</string>
+    <string name="dock_position_low">Low</string>
+    <string name="dock_position_lower">Lower</string>
+    <string name="dock_position_bottom">Bottom</string>
+    <string name="dock_position_hint">Moves the dock down towards the bottom edge. Applies when there are no rows under the dock (0 rows, or Show only the dock).</string>
+
+    <!-- Wallpaper picked straight from the TV's storage. -->
+    <string name="wallpaper_pick_image">Choose a picture from storage…</string>
+    <string name="wallpaper_custom">Your picture</string>
+    <string name="wallpaper_pick_unavailable">This TV has no file picker. Copy pictures into the wallpapers folder of the launcher instead.</string>
+    <string name="wallpaper_pick_failed">That picture could not be used</string>
 </resources>
