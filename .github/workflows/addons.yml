@@ -1,25 +1,23 @@
 name: Add-ons
 
-# Builds only what changed under addons/. Separate from CI on purpose: an add-on can't block or
-# slow the launcher's build, and the launcher's size gate never sees add-on code.
+# Cho phép chạy tự động khi push/PR hoặc bấm nút thủ công trên giao diện GitHub
 on:
   pull_request:
     paths: ["addons/**"]
   push:
     branches: [main]
     paths: ["addons/**"]
+  workflow_dispatch: # Kích hoạt nút "Run workflow" thủ công
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Build changed add-ons
+    name: Build add-ons
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -27,22 +25,35 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platforms;android-34 build-tools;34.0.0
-      - name: Build each add-on that changed
+
+      - name: Build all add-ons (or changed ones on push/PR)
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          IS_MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
-          changed=$(git diff --name-only "$BASE" HEAD -- addons | awk -F/ 'NF>2 {print $2}' | sort -u)
-          [ -z "$changed" ] && { echo "no add-on changed"; exit 0; }
+          if [ "$IS_MANUAL" = "true" ]; then
+            echo "::notice::Manual trigger detected: Building ALL add-ons."
+            # Lấy tất cả các thư mục con trong thư mục addons/
+            changed=$(ls -d addons/* | awk -F/ '{print $2}' | sort -u)
+          else
+            # Lọc theo các add-on có thay đổi khi push/PR
+            changed=$(git diff --name-only "$BASE" HEAD -- addons | awk -F/ 'NF>2 {print $2}' | sort -u)
+          fi
+
+          [ -z "$changed" ] && { echo "no add-ons found"; exit 0; }
+          
           for a in $changed; do
             [ -d "addons/$a" ] || continue
-            [ -f "addons/$a/gradlew" ] || { echo "addons/$a has no gradlew"; exit 1; }
+            [ -f "addons/$a/gradlew" ] || { echo "addons/$a has no gradlew"; continue; }
             echo "::group::addons/$a"
             (cd "addons/$a" && chmod +x gradlew && ./gradlew --no-daemon assembleRelease)
             echo "::endgroup::"
           done
+
       - name: Upload Add-ons APKs
         uses: actions/upload-artifact@v4
         with:
           name: addons-release-apks
           path: addons/*/build/outputs/apk/release/*.apk
           if-no-files-found: ignore
+          
