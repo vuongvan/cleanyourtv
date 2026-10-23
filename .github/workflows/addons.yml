@@ -40,3 +40,9 @@ jobs:
             (cd "addons/$a" && chmod +x gradlew && ./gradlew --no-daemon assembleRelease)
             echo "::endgroup::"
           done
+      - name: Upload Add-ons APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: addons-release-apks
+          path: addons/*/build/outputs/apk/release/*.apk
+          if-no-files-found: ignore
