@@ -283,12 +283,34 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- Lunar date (am lich, e.g. "Âm lịch: 15/9 năm Bính Ngọ") under the clock; gone when the owner turns it off in
+                 Launcher settings. Outside leftBlock like stats, so the top buttons stay level with the clock row. -->
+            <TextView
+                android:id="@+id/lunarDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/leftBlock"
+                android:layout_alignParentEnd="true"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="2dp"
+                android:gravity="right"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:textColor="#CCFFFFFF"
+                android:textSize="15sp"
+                android:fontFamily="@string/font_regular"
+                android:letterSpacing="0.02"
+                android:includeFontPadding="false"
+                android:focusable="false"
+                android:importantForAccessibility="no"
+                android:visibility="gone" />
+
             <!-- Shown only when show_stats is on. Outside leftBlock, so the top buttons stay level with the clock
                  row; gone, it takes no space. -->
             <TextView
                 android:id="@+id/stats"
                 android:layout_width="wrap_content"
-                android:layout_below="@id/leftBlock"
+                android:layout_below="@id/lunarDate"
                 android:layout_alignStart="@id/leftBlock"
                 android:layout_alignEnd="@id/leftBlock"
                 android:gravity="right"
