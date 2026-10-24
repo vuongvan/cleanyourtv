@@ -147,7 +147,7 @@
             android:layout_marginTop="10dp"
             android:background="@drawable/settings_choice_bg"
             android:focusable="true"
-            android:max="36"
+            android:max="24"
             android:paddingStart="24dp"
             android:paddingEnd="24dp"
             android:paddingTop="14dp"
