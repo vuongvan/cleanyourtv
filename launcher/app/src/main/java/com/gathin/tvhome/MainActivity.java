@@ -1659,10 +1659,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateHeroDots(position);
     }
 
-    /** The size of the app name above the dock, when the owner set one in Launcher settings (0 keeps the theme's). */
+    /** Makes the app name above the dock larger or smaller than the theme's size by the owner's change (Launcher settings). */
     private void applyHeroTitleSize() {
-        int sp = HomeChoices.heroTitleSp(HomeChoices.heroTitleStep(this));
-        if (sp > 0) heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
+        int delta = HomeChoices.heroTitleDeltaSp(this);
+        if (delta == 0) return;
+        float themeSp = heroName.getTextSize() / getResources().getDisplayMetrics().scaledDensity;
+        heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, HomeChoices.heroTitleSp(Math.round(themeSp), delta));
     }
 
     // ---- cinematic shelf -------------------------------------------------------------------------

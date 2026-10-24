@@ -44,7 +44,7 @@ public final class LauncherSettingsActivity extends Activity {
     private boolean dockOnly;
     private boolean lunar;
     private int dockDown;   // dp the dock is lowered by
-    private int heroTitleStep;
+    private int heroTitleDelta;   // sp larger (+) or smaller (-) than the theme's size
 
     @Override
     protected void onCreate(Bundle state) {
@@ -103,7 +103,7 @@ public final class LauncherSettingsActivity extends Activity {
         dockOnly = HomeChoices.dockOnly(this);
         lunar = HomeChoices.lunarDate(this);
         dockDown = HomeChoices.dockDownDp(this);
-        heroTitleStep = HomeChoices.heroTitleStep(this);
+        heroTitleDelta = HomeChoices.heroTitleDeltaSp(this);
         dockOnlyChoice = findViewById(R.id.dockOnlyChoice);
         dockOnlyChoice.setOnClickListener(v -> {
             dockOnly = !dockOnly;
@@ -133,13 +133,13 @@ public final class LauncherSettingsActivity extends Activity {
         });
         heroTitleLabel = findViewById(R.id.heroTitleLabel);
         heroTitleSlider = findViewById(R.id.heroTitleSlider);
-        heroTitleSlider.setMax(HomeChoices.HERO_TITLE_STEPS);
+        heroTitleSlider.setMax(2 * HomeChoices.HERO_TITLE_RANGE_SP / HomeChoices.HERO_TITLE_STEP_SP);
         heroTitleSlider.setKeyProgressIncrement(1);
         heroTitleSlider.setOnSeekBarChangeListener(new SimpleSeekListener() {
             @Override
             void onUserChange(int progress) {
-                heroTitleStep = progress;
-                choices.edit().putInt(HomeChoices.HERO_TITLE_KEY, progress).apply();
+                heroTitleDelta = HomeChoices.heroTitleDeltaFromProgress(progress);
+                choices.edit().putInt(HomeChoices.HERO_TITLE_KEY, heroTitleDelta).apply();
                 changed();
                 refresh();
             }
@@ -185,7 +185,7 @@ public final class LauncherSettingsActivity extends Activity {
             dockOnly = HomeChoices.dockOnly(this);
             lunar = HomeChoices.lunarDate(this);
             dockDown = HomeChoices.dockDownDp(this);
-            heroTitleStep = HomeChoices.heroTitleStep(this);
+            heroTitleDelta = HomeChoices.heroTitleDeltaSp(this);
             Config current = Config.load(this);
             columns = current.columns;
             rowsBelowDock = current.rowsBelowDock;
@@ -381,10 +381,10 @@ public final class LauncherSettingsActivity extends Activity {
         if (dockDownSlider.getProgress() != dockDown / HomeChoices.DOCK_DOWN_STEP_DP) {
             dockDownSlider.setProgress(dockDown / HomeChoices.DOCK_DOWN_STEP_DP);
         }
-        int heroSp = HomeChoices.heroTitleSp(heroTitleStep);
-        heroTitleLabel.setText(heroSp == 0 ? getString(R.string.hero_title_default)
-                : getString(R.string.hero_title_state, heroSp));
-        if (heroTitleSlider.getProgress() != heroTitleStep) heroTitleSlider.setProgress(heroTitleStep);
+        heroTitleLabel.setText(heroTitleDelta == 0 ? getString(R.string.hero_title_default)
+                : getString(R.string.hero_title_state, heroTitleDelta));
+        int heroProgress = HomeChoices.heroTitleProgress(heroTitleDelta);
+        if (heroTitleSlider.getProgress() != heroProgress) heroTitleSlider.setProgress(heroProgress);
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 

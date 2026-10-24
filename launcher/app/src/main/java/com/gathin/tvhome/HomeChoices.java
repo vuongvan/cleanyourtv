@@ -12,14 +12,20 @@ final class HomeChoices {
     static final String LUNAR_KEY = "lunar_date";
     static final String DOCK_ONLY_KEY = "dock_only";
     static final String DOCK_DOWN_KEY = "dock_down_dp";
-    static final String HERO_TITLE_KEY = "hero_title_step";
+    static final String HERO_TITLE_KEY = "hero_title_delta_sp";
 
     /** The dock can be lowered by 0 to this many dp (a slider in steps of {@link #DOCK_DOWN_STEP_DP}). */
     static final int DOCK_DOWN_MAX_DP = 240;
     static final int DOCK_DOWN_STEP_DP = 4;
 
-    /** Slider steps for the app name above the dock: 0 keeps the theme's size, step 1 is 24 sp, +2 sp each. */
-    static final int HERO_TITLE_STEPS = 36;
+    /**
+     * The app name above the dock is made larger or smaller than the theme's size by up to this many sp, in steps of
+     * {@link #HERO_TITLE_STEP_SP}. The slider rests in the middle (no change) and moves both ways.
+     */
+    static final int HERO_TITLE_RANGE_SP = 24;
+    static final int HERO_TITLE_STEP_SP = 2;
+    /** The smallest the name may become, whatever the theme's size and the slider say. */
+    static final int HERO_TITLE_MIN_SP = 12;
 
     private HomeChoices() {
     }
@@ -47,19 +53,27 @@ final class HomeChoices {
         return Math.max(0, Math.min(DOCK_DOWN_MAX_DP, dp));
     }
 
-    /** Slider step (0 to HERO_TITLE_STEPS) of the app name's size. */
-    static int heroTitleStep(Context ctx) {
-        return clampHeroStep(prefs(ctx).getInt(HERO_TITLE_KEY, 0));
+    /** Change to the app name's size, in sp: negative makes it smaller, 0 keeps the theme's size. */
+    static int heroTitleDeltaSp(Context ctx) {
+        return clampHeroDelta(prefs(ctx).getInt(HERO_TITLE_KEY, 0));
     }
 
-    static int clampHeroStep(int step) {
-        return Math.max(0, Math.min(HERO_TITLE_STEPS, step));
+    static int clampHeroDelta(int deltaSp) {
+        return Math.max(-HERO_TITLE_RANGE_SP, Math.min(HERO_TITLE_RANGE_SP, deltaSp));
     }
 
-    /** The size in sp of a slider step; 0 means the theme's own size. */
-    static int heroTitleSp(int step) {
-        int s = clampHeroStep(step);
-        return s == 0 ? 0 : 24 + 2 * (s - 1);
+    /** The slider position (0 to 2 * range / step) of a change: the middle is no change. */
+    static int heroTitleProgress(int deltaSp) {
+        return (clampHeroDelta(deltaSp) + HERO_TITLE_RANGE_SP) / HERO_TITLE_STEP_SP;
+    }
+
+    static int heroTitleDeltaFromProgress(int progress) {
+        return clampHeroDelta(progress * HERO_TITLE_STEP_SP - HERO_TITLE_RANGE_SP);
+    }
+
+    /** The size to use for a theme size and a change, both in sp. */
+    static int heroTitleSp(int themeSp, int deltaSp) {
+        return Math.max(HERO_TITLE_MIN_SP, themeSp + clampHeroDelta(deltaSp));
     }
 
     /** Forget these choices (Launcher settings, "Follow theme"). */
