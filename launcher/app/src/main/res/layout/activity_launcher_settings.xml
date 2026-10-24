@@ -102,24 +102,27 @@
             android:textSize="14sp" />
 
         <TextView
+            android:id="@+id/dockDownLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:text="@string/dock_position_label"
             android:textColor="#FFFFFFFF"
             android:textSize="20sp" />
 
-        <LinearLayout
+        <SeekBar
+            android:id="@+id/dockDownSlider"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:orientation="horizontal">
-
-            <TextView android:id="@+id/dockPos0" style="@style/SettingsColumnChoice" android:text="@string/dock_position_default" />
-            <TextView android:id="@+id/dockPos1" style="@style/SettingsColumnChoice" android:text="@string/dock_position_low" />
-            <TextView android:id="@+id/dockPos2" style="@style/SettingsColumnChoice" android:text="@string/dock_position_lower" />
-            <TextView android:id="@+id/dockPos3" style="@style/SettingsColumnChoice" android:text="@string/dock_position_bottom" />
-        </LinearLayout>
+            android:background="@drawable/settings_choice_bg"
+            android:focusable="true"
+            android:max="60"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:progressTint="#FF4DAE6D"
+            android:thumbTint="#FFB9E7C7" />
 
         <TextView
             android:layout_width="match_parent"
@@ -128,6 +131,29 @@
             android:text="@string/dock_position_hint"
             android:textColor="#FFACB8C1"
             android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/heroTitleLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:textColor="#FFFFFFFF"
+            android:textSize="20sp" />
+
+        <SeekBar
+            android:id="@+id/heroTitleSlider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/settings_choice_bg"
+            android:focusable="true"
+            android:max="36"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:progressTint="#FF4DAE6D"
+            android:thumbTint="#FFB9E7C7" />
 
         <TextView
             android:id="@+id/lunarChoice"
