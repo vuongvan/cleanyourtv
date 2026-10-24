@@ -109,6 +109,8 @@ public final class LauncherSettingsActivity extends Activity {
         dockDown = HomeChoices.dockDownDp(this);
         heroTitleDelta = HomeChoices.heroTitleDeltaSp(this);
         stockRedirect = HomeChoices.stockRedirect(this);
+        // The default-home row that was already here: it now tries Android's role dialog first (HomeTakeover) and falls
+        // back to the Home picker with the same help text as before, and shows whether this launcher is the default.
         defaultHomeChoice = findViewById(R.id.defaultHomeChoice);
         defaultHomeChoice.setOnClickListener(v -> HomeTakeover.requestDefaultHome(this));
         stockRedirectChoice = findViewById(R.id.stockRedirectChoice);
@@ -220,10 +222,6 @@ public final class LauncherSettingsActivity extends Activity {
             advancedEffects = current.animations && current.advancedEffects;
             changed();
             refresh();
-        });
-        findViewById(R.id.defaultHomeChoice).setOnClickListener(v -> {
-            Toast.makeText(this, R.string.home_settings_help, Toast.LENGTH_LONG).show();
-            open(new Intent(Settings.ACTION_HOME_SETTINGS));
         });
         findViewById(R.id.tvSettingsChoice).setOnClickListener(v ->
                 open(SystemSettings.intent(this, Settings.ACTION_SETTINGS)));
