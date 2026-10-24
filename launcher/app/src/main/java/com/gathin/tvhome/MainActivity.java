@@ -420,6 +420,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         cinematicWhiteFocus = cfg.cinematicWhiteFocus;
         heroArtAlpha = cfg.cinematicArt / 100f;
         if (cinematic) setUpCinematicShelf(cfg.cinematicScrim);
+        applyHeroTitleSize();
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
         // still follows the dock.
         if (!cfg.dockTitle) hero.setVisibility(View.GONE);
@@ -455,6 +456,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             shamsiDate.setVisibility(View.VISIBLE);
             TextView date = findViewById(R.id.date);
             date.setTextSize(11f);
+            lunarDate.setTextSize(11f);
             date.setPadding(0, (int) (4 * density), 0, 0);
         }
         vpnApp = cfg.vpnApp;
@@ -533,12 +535,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         // tvOS layout: push the dock row towards the bottom of the screen, leaving room for
         // rows_below_dock grid rows under it; the rest of the grid stays below until you press Down.
-        // Dock only (Launcher settings) shows no rows under the dock, so the dock may also sit lower: the owner's
-        // "dock position" is honoured only when no row has to fit under it.
+        // Dock only (Launcher settings) shows no rows under the dock. The owner can also lower the dock by a number of
+        // dp (HomeChoices.dockDownDp, a slider), with or without rows under it: those rows then run off the bottom.
         final boolean dockOnlyChoice = cfg.dockRow && HomeChoices.dockOnly(this);
         final int rowsBelowDock = dockOnlyChoice ? 0 : cfg.rowsBelowDock;
-        final float bottomRoomDp = rowsBelowDock == 0 && cfg.dockRow
-                ? HomeChoices.bottomRoomDp(HomeChoices.dockBottom(this)) : AppAdapter.BOTTOM_ROOM_DP;
+        final int dockDownPx = cfg.dockRow ? (int) (HomeChoices.dockDownDp(this) * density) : 0;
         grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
             int h = b - t;
             // Item height follows the tile size, which follows the columns and the rows that must fit (AppAdapter.tileWidthPx).
@@ -550,10 +551,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Keep the hero below the header when the library is enabled on a short screen,
             // even when the theme requests an extra visible row below the dock.
             int shelfClearance = cfg.appLibrary ? hero.getMeasuredHeight() + (int) (40 * density) : 0;
-            int want = Math.max(shelfClearance, h - dockRow - gridRows - (int) (bottomRoomDp * density));
+            int want = Math.max(shelfClearance, h - dockRow - gridRows - (int) (AppAdapter.BOTTOM_ROOM_DP * density));
             // Where the rows cannot fit even at the smallest tile (3 rows with the title on), the title keeps its
             // room above the dock and the last rows run off the bottom instead of the title drawing over the clock.
             if (MainActivity.this.dockRow && cfg.dockTitle && rowsBelowDock > 0) want = Math.max(want, (int) (AppAdapter.TITLE_ROOM_DP * density));
+            // The owner's slider: lower the dock, but never past the screen's bottom edge (the band's 12 dp below the
+            // tiles may go off screen, so the tiles themselves can reach it).
+            if (dockDownPx > 0) want = Math.min(want + dockDownPx, Math.max(want, h - dockRow + (int) (12 * density)));
             // No dock to push down: the grid starts at the top, with room for the first row's zoom and glass.
             if (!MainActivity.this.dockRow) want = (int) (AppAdapter.TOP_ROOM_DP * density);
             if (grid.getPaddingTop() != want) {
@@ -1653,6 +1657,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!cinematic) return;
         updateHeroMeta(position);
         updateHeroDots(position);
+    }
+
+    /** The size of the app name above the dock, when the owner set one in Launcher settings (0 keeps the theme's). */
+    private void applyHeroTitleSize() {
+        int sp = HomeChoices.heroTitleSp(HomeChoices.heroTitleStep(this));
+        if (sp > 0) heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
     }
 
     // ---- cinematic shelf -------------------------------------------------------------------------

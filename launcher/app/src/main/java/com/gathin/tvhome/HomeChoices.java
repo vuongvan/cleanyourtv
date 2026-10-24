@@ -5,19 +5,21 @@ import android.content.SharedPreferences;
 
 /**
  * Choices made in Launcher settings that belong to the owner rather than to a theme: the lunar date line, showing
- * only the dock, and how far down the dock sits. They live in the same preferences file as the other on-TV
+ * only the dock, how far down the dock sits and the size of the app name above it. They live in the same preferences file as the other on-TV
  * choices (Config.SETTINGS_NAME) but a theme push never clears them; only "Follow theme" does.
  */
 final class HomeChoices {
     static final String LUNAR_KEY = "lunar_date";
     static final String DOCK_ONLY_KEY = "dock_only";
-    static final String DOCK_BOTTOM_KEY = "dock_bottom";
+    static final String DOCK_DOWN_KEY = "dock_down_dp";
+    static final String HERO_TITLE_KEY = "hero_title_step";
 
-    /**
-     * Room kept under the dock band, in dp, for each position the owner can pick: 0 is the stock layout
-     * (AppAdapter.BOTTOM_ROOM_DP) and the last one puts the band against the bottom edge of the screen.
-     */
-    static final int[] DOCK_BOTTOM_ROOM_DP = {30, 18, 8, 0};
+    /** The dock can be lowered by 0 to this many dp (a slider in steps of {@link #DOCK_DOWN_STEP_DP}). */
+    static final int DOCK_DOWN_MAX_DP = 240;
+    static final int DOCK_DOWN_STEP_DP = 4;
+
+    /** Slider steps for the app name above the dock: 0 keeps the theme's size, step 1 is 24 sp, +2 sp each. */
+    static final int HERO_TITLE_STEPS = 36;
 
     private HomeChoices() {
     }
@@ -36,27 +38,37 @@ final class HomeChoices {
         return prefs(ctx).getBoolean(DOCK_ONLY_KEY, false);
     }
 
-    /** 0 (stock) to {@code DOCK_BOTTOM_ROOM_DP.length - 1} (against the bottom edge). */
-    static int dockBottom(Context ctx) {
-        return clampBottom(prefs(ctx).getInt(DOCK_BOTTOM_KEY, 0));
+    /** How far the dock is lowered, in dp; 0 is the stock place. */
+    static int dockDownDp(Context ctx) {
+        return clampDown(prefs(ctx).getInt(DOCK_DOWN_KEY, 0));
     }
 
-    static int clampBottom(int level) {
-        return Math.max(0, Math.min(DOCK_BOTTOM_ROOM_DP.length - 1, level));
+    static int clampDown(int dp) {
+        return Math.max(0, Math.min(DOCK_DOWN_MAX_DP, dp));
     }
 
-    /** The room under the dock for this position, in dp. */
-    static float bottomRoomDp(int level) {
-        return DOCK_BOTTOM_ROOM_DP[clampBottom(level)];
+    /** Slider step (0 to HERO_TITLE_STEPS) of the app name's size. */
+    static int heroTitleStep(Context ctx) {
+        return clampHeroStep(prefs(ctx).getInt(HERO_TITLE_KEY, 0));
     }
 
-    /** Forget the three choices (Launcher settings, "Follow theme"). */
+    static int clampHeroStep(int step) {
+        return Math.max(0, Math.min(HERO_TITLE_STEPS, step));
+    }
+
+    /** The size in sp of a slider step; 0 means the theme's own size. */
+    static int heroTitleSp(int step) {
+        int s = clampHeroStep(step);
+        return s == 0 ? 0 : 24 + 2 * (s - 1);
+    }
+
+    /** Forget these choices (Launcher settings, "Follow theme"). */
     static SharedPreferences.Editor reset(SharedPreferences.Editor editor) {
-        return editor.remove(LUNAR_KEY).remove(DOCK_ONLY_KEY).remove(DOCK_BOTTOM_KEY);
+        return editor.remove(LUNAR_KEY).remove(DOCK_ONLY_KEY).remove(DOCK_DOWN_KEY).remove(HERO_TITLE_KEY);
     }
 
-    /** True when any of the three has been changed from its default. */
+    /** True when any of them has been changed from its default. */
     static boolean anySet(SharedPreferences p) {
-        return p.contains(LUNAR_KEY) || p.contains(DOCK_ONLY_KEY) || p.contains(DOCK_BOTTOM_KEY);
+        return p.contains(LUNAR_KEY) || p.contains(DOCK_ONLY_KEY) || p.contains(DOCK_DOWN_KEY) || p.contains(HERO_TITLE_KEY);
     }
 }

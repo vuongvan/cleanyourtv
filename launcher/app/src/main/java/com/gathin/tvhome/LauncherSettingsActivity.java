@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,7 +31,10 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView followThemeChoice;
     private TextView dockOnlyChoice;
     private TextView lunarChoice;
-    private final TextView[] dockPosChoices = new TextView[HomeChoices.DOCK_BOTTOM_ROOM_DP.length];
+    private TextView dockDownLabel;
+    private TextView heroTitleLabel;
+    private SeekBar dockDownSlider;
+    private SeekBar heroTitleSlider;
     private static final int PICK_IMAGE_REQUEST = 41;
     private int columns;
     private int rowsBelowDock;
@@ -39,7 +43,8 @@ public final class LauncherSettingsActivity extends Activity {
     private boolean advancedEffects;
     private boolean dockOnly;
     private boolean lunar;
-    private int dockBottom;
+    private int dockDown;   // dp the dock is lowered by
+    private int heroTitleStep;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -97,7 +102,8 @@ public final class LauncherSettingsActivity extends Activity {
         }
         dockOnly = HomeChoices.dockOnly(this);
         lunar = HomeChoices.lunarDate(this);
-        dockBottom = HomeChoices.dockBottom(this);
+        dockDown = HomeChoices.dockDownDp(this);
+        heroTitleStep = HomeChoices.heroTitleStep(this);
         dockOnlyChoice = findViewById(R.id.dockOnlyChoice);
         dockOnlyChoice.setOnClickListener(v -> {
             dockOnly = !dockOnly;
@@ -112,25 +118,38 @@ public final class LauncherSettingsActivity extends Activity {
             changed();
             refresh();
         });
-        int[] posIds = {R.id.dockPos0, R.id.dockPos1, R.id.dockPos2, R.id.dockPos3};
-        for (int i = 0; i < posIds.length; i++) {
-            final int value = i;
-            dockPosChoices[i] = findViewById(posIds[i]);
-            dockPosChoices[i].setOnClickListener(v -> {
-                if (dockBottom == value) return;
-                dockBottom = value;
-                choices.edit().putInt(HomeChoices.DOCK_BOTTOM_KEY, value).apply();
+        dockDownLabel = findViewById(R.id.dockDownLabel);
+        dockDownSlider = findViewById(R.id.dockDownSlider);
+        dockDownSlider.setMax(HomeChoices.DOCK_DOWN_MAX_DP / HomeChoices.DOCK_DOWN_STEP_DP);
+        dockDownSlider.setKeyProgressIncrement(1);
+        dockDownSlider.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override
+            void onUserChange(int progress) {
+                dockDown = progress * HomeChoices.DOCK_DOWN_STEP_DP;
+                choices.edit().putInt(HomeChoices.DOCK_DOWN_KEY, dockDown).apply();
                 changed();
                 refresh();
-            });
-        }
+            }
+        });
+        heroTitleLabel = findViewById(R.id.heroTitleLabel);
+        heroTitleSlider = findViewById(R.id.heroTitleSlider);
+        heroTitleSlider.setMax(HomeChoices.HERO_TITLE_STEPS);
+        heroTitleSlider.setKeyProgressIncrement(1);
+        heroTitleSlider.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override
+            void onUserChange(int progress) {
+                heroTitleStep = progress;
+                choices.edit().putInt(HomeChoices.HERO_TITLE_KEY, progress).apply();
+                changed();
+                refresh();
+            }
+        });
         // Keep the numeric choices increasing in the Hebrew reading direction. Reorder the
         // actual views so D-pad focus follows their positions without changing the saved values.
         if (getResources().getBoolean(R.bool.rtl_app_grid)) {
             reverseRow(columnChoices);
             reverseRow(rowChoices);
             reverseRow(dockChoices);
-            reverseRow(dockPosChoices);
         }
         wallpaperChoice = findViewById(R.id.wallpaperChoice);
         wallpaperChoice.setOnClickListener(v -> showWallpaperPicker());
@@ -165,7 +184,8 @@ public final class LauncherSettingsActivity extends Activity {
                     .remove(Config.DOCK_OPACITY_KEY)).commit();
             dockOnly = HomeChoices.dockOnly(this);
             lunar = HomeChoices.lunarDate(this);
-            dockBottom = HomeChoices.dockBottom(this);
+            dockDown = HomeChoices.dockDownDp(this);
+            heroTitleStep = HomeChoices.heroTitleStep(this);
             Config current = Config.load(this);
             columns = current.columns;
             rowsBelowDock = current.rowsBelowDock;
@@ -231,6 +251,24 @@ public final class LauncherSettingsActivity extends Activity {
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    /** A SeekBar listener that only cares about changes the owner made (not the ones refresh() makes). */
+    private abstract static class SimpleSeekListener implements SeekBar.OnSeekBarChangeListener {
+        abstract void onUserChange(int progress);
+
+        @Override
+        public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+            if (fromUser) onUserChange(progress);
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekBar bar) {
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar bar) {
+        }
     }
 
     /** A saved picture from the owner's storage reads "Your picture" instead of its generated file name. */
@@ -338,9 +376,15 @@ public final class LauncherSettingsActivity extends Activity {
                         : getString(R.string.wallpaper_theme_default)));
         dockOnlyChoice.setText(getString(R.string.dock_only_state, getString(dockOnly ? R.string.on : R.string.off)));
         lunarChoice.setText(getString(R.string.lunar_state, getString(lunar ? R.string.on : R.string.off)));
-        for (int i = 0; i < dockPosChoices.length; i++) {
-            dockPosChoices[i].setSelected(dockBottom == i);
+        dockDownLabel.setText(dockDown == 0 ? getString(R.string.dock_position_off)
+                : getString(R.string.dock_position_state, dockDown));
+        if (dockDownSlider.getProgress() != dockDown / HomeChoices.DOCK_DOWN_STEP_DP) {
+            dockDownSlider.setProgress(dockDown / HomeChoices.DOCK_DOWN_STEP_DP);
         }
+        int heroSp = HomeChoices.heroTitleSp(heroTitleStep);
+        heroTitleLabel.setText(heroSp == 0 ? getString(R.string.hero_title_default)
+                : getString(R.string.hero_title_state, heroSp));
+        if (heroTitleSlider.getProgress() != heroTitleStep) heroTitleSlider.setProgress(heroTitleStep);
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 
