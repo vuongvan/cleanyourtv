@@ -85,7 +85,10 @@
             android:clearTaskOnLaunch="true"
             android:configChanges="orientation|screenSize|keyboard|keyboardHidden|uiMode"
             android:screenOrientation="landscape">
-            <intent-filter>
+            <!-- priority 1000, as in cleantv-fork: with no default Home chosen yet, Android picks the highest
+                 priority among the HOME activities, so this launcher wins over a stock one that has 0. It does not
+                 override a default the owner (or the TV) has already set; see "Default home" in Launcher settings. -->
+            <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />

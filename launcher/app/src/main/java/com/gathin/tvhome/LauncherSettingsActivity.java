@@ -31,6 +31,8 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView followThemeChoice;
     private TextView dockOnlyChoice;
     private TextView lunarChoice;
+    private TextView defaultHomeChoice;
+    private TextView stockRedirectChoice;
     private TextView dockDownLabel;
     private TextView heroTitleLabel;
     private SeekBar dockDownSlider;
@@ -44,6 +46,7 @@ public final class LauncherSettingsActivity extends Activity {
     private boolean advancedEffects;
     private boolean dockOnly;
     private boolean lunar;
+    private boolean stockRedirect;
     private int dockDown;   // dp the dock is lowered by
     private int heroTitleDelta;   // sp larger (+) or smaller (-) than the theme's size
 
@@ -105,6 +108,25 @@ public final class LauncherSettingsActivity extends Activity {
         lunar = HomeChoices.lunarDate(this);
         dockDown = HomeChoices.dockDownDp(this);
         heroTitleDelta = HomeChoices.heroTitleDeltaSp(this);
+        stockRedirect = HomeChoices.stockRedirect(this);
+        defaultHomeChoice = findViewById(R.id.defaultHomeChoice);
+        defaultHomeChoice.setOnClickListener(v -> HomeTakeover.requestDefaultHome(this));
+        stockRedirectChoice = findViewById(R.id.stockRedirectChoice);
+        stockRedirectChoice.setOnClickListener(v -> {
+            stockRedirect = !stockRedirect;
+            choices.edit().putBoolean(HomeChoices.STOCK_REDIRECT_KEY, stockRedirect).apply();
+            if (stockRedirect && !HomeTakeover.serviceEnabled(this, HomeKeyService.class)) {
+                if (HomeTakeover.enableService(this, HomeKeyService.class)) {
+                    Toast.makeText(this, R.string.stock_redirect_enabled, Toast.LENGTH_SHORT).show();
+                } else {
+                    // Android lets only the owner switch an accessibility service on: open its list and say which one
+                    Toast.makeText(this, getString(R.string.stock_redirect_enable_hint, getString(R.string.home_key_name)),
+                            Toast.LENGTH_LONG).show();
+                    HomeTakeover.openAccessibilitySettings(this);
+                }
+            }
+            refresh();
+        });
         dockOnlyChoice = findViewById(R.id.dockOnlyChoice);
         dockOnlyChoice.setOnClickListener(v -> {
             dockOnly = !dockOnly;
@@ -300,6 +322,13 @@ public final class LauncherSettingsActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        // back from the Home picker or the accessibility list: show what the owner changed there
+        if (defaultHomeChoice != null) refresh();
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
@@ -430,6 +459,10 @@ public final class LauncherSettingsActivity extends Activity {
                 "none".equals(wallpaperCurrent) ? getString(R.string.wallpaper_none)
                         : wallpaperCurrent != null ? wallpaperLabel(wallpaperCurrent)
                         : getString(R.string.wallpaper_theme_default)));
+        defaultHomeChoice.setText(getString(R.string.default_home_state,
+                getString(HomeTakeover.isDefaultHome(this) ? R.string.default_home_yes : R.string.default_home_no)));
+        stockRedirectChoice.setText(getString(R.string.stock_redirect_state, getString(!stockRedirect ? R.string.off
+                : HomeTakeover.serviceEnabled(this, HomeKeyService.class) ? R.string.on : R.string.stock_redirect_waiting)));
         dockOnlyChoice.setText(getString(R.string.dock_only_state, getString(dockOnly ? R.string.on : R.string.off)));
         lunarChoice.setText(getString(R.string.lunar_state, getString(lunar ? R.string.on : R.string.off)));
         dockDownLabel.setText(dockDown == 0 ? getString(R.string.dock_position_off)

@@ -22,6 +22,7 @@ import android.widget.Toast;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -52,6 +53,8 @@ public class HomeKeyService extends AccessibilityService {
     private Map<Integer, String> holdAppKeys = Collections.emptyMap();
     private Map<Integer, String> holdAppScancodes = Collections.emptyMap();
 
+    /** Held here because SharedPreferences keeps its listeners weakly; null until the config has been read once. */
+    private SharedPreferences.OnSharedPreferenceChangeListener redirectListener;
     /** Waits for the user to unlock when Android binds this service at boot; null once the config is read. */
     private BroadcastReceiver unlockReceiver;
     /** The stock launcher's HOME activities (stock_home_redirect), disabled ones included. */
@@ -95,6 +98,10 @@ public class HomeKeyService extends AccessibilityService {
     @Override
     public void onDestroy() {
         stopWaitingForUnlock();
+        if (redirectListener != null) {
+            getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(redirectListener);
+            redirectListener = null;
+        }
         if (gamepads != null) gamepads.stop();
         super.onDestroy();
     }
@@ -111,13 +118,8 @@ public class HomeKeyService extends AccessibilityService {
         appKeys = RemoteKeys.parseAppKeys(config.appKeys);
         appScancodes = RemoteKeys.parseAppScancodes(config.appKeys);
         RemoteKeys.applyKeyFilter(this, config.keyFilter);
-        stockHome.clear();
-        if (!config.stockHomeRedirect.isEmpty()) {
-            Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setPackage(config.stockHomeRedirect);
-            for (ResolveInfo ri : getPackageManager().queryIntentActivities(home, PackageManager.MATCH_DISABLED_COMPONENTS)) {
-                stockHome.add(ri.activityInfo.name);
-            }
-        }
+        loadStockHome(config);
+        watchRedirectSwitch();
         // home_key_service.xml subscribes to no events, so the redirect asks for window changes only when it is on.
         AccessibilityServiceInfo info = getServiceInfo();
         if (info != null && !stockHome.isEmpty()) {
@@ -132,6 +134,32 @@ public class HomeKeyService extends AccessibilityService {
             gamepads = new GamepadPassthrough(this);
             gamepads.start();
         }
+    }
+
+    /**
+     * The stock launchers' HOME activities to send back here: the theme's stock_home_redirect package and, when the
+     * owner turned on "Replace the stock launcher" in Launcher settings, every stock launcher found on the TV.
+     */
+    private void loadStockHome(Config config) {
+        stockHome.clear();
+        Set<String> packages = new LinkedHashSet<>();
+        if (!config.stockHomeRedirect.isEmpty()) packages.add(config.stockHomeRedirect);
+        if (HomeChoices.stockRedirect(this)) packages.addAll(HomeTakeover.stockLauncherPackages(this));
+        for (String pkg : packages) {
+            Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setPackage(pkg);
+            for (ResolveInfo ri : getPackageManager().queryIntentActivities(home, PackageManager.MATCH_DISABLED_COMPONENTS)) {
+                stockHome.add(ri.activityInfo.name);
+            }
+        }
+    }
+
+    /** Reads the config again when the owner flips the switch, so it takes effect without restarting the helper. */
+    private void watchRedirectSwitch() {
+        if (redirectListener != null) return;
+        redirectListener = (prefs, key) -> {
+            if (HomeChoices.STOCK_REDIRECT_KEY.equals(key)) loadConfig();
+        };
+        getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE).registerOnSharedPreferenceChangeListener(redirectListener);
     }
 
     private boolean isSettingsKey(KeyEvent event) {

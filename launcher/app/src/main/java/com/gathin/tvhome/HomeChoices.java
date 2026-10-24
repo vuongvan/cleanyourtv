@@ -13,6 +13,11 @@ final class HomeChoices {
     static final String DOCK_ONLY_KEY = "dock_only";
     static final String DOCK_DOWN_KEY = "dock_down_dp";
     static final String HERO_TITLE_KEY = "hero_title_delta_sp";
+    /**
+     * "Replace the stock launcher": HomeKeyService sends the TV back to this launcher whenever a stock launcher's home
+     * screen comes up. It is how the TV behaves rather than how Home looks, so "Follow theme" does not clear it.
+     */
+    static final String STOCK_REDIRECT_KEY = "stock_redirect";
 
     /** The dock can be lowered by 0 to this many dp (a slider in steps of {@link #DOCK_DOWN_STEP_DP}). */
     static final int DOCK_DOWN_MAX_DP = 240;
@@ -42,6 +47,11 @@ final class HomeChoices {
     /** Only the dock row is shown: the rows under it are hidden and cannot be reached. Off by default. */
     static boolean dockOnly(Context ctx) {
         return prefs(ctx).getBoolean(DOCK_ONLY_KEY, false);
+    }
+
+    /** True when the owner turned on "replace the stock launcher" (Launcher settings); off by default. */
+    static boolean stockRedirect(Context ctx) {
+        return prefs(ctx).getBoolean(STOCK_REDIRECT_KEY, false);
     }
 
     /** How far the dock is lowered, in dp; 0 is the stock place. */

@@ -222,4 +222,15 @@
     <string name="theme_web_sending">Sending</string>
     <string name="theme_web_wrong_pin">Wrong PIN</string>
     <string name="theme_web_locked">Too many wrong PINs. Close and reopen this screen on the TV.</string>
+
+    <!-- Taking over from the stock launcher without ADB (Launcher settings). -->
+    <string name="default_home_state">Default home: %1$s</string>
+    <string name="default_home_yes">this launcher</string>
+    <string name="default_home_no">not this launcher (tap to change)</string>
+    <string name="default_home_already">This launcher is already the default home</string>
+    <string name="stock_redirect_state">Replace the stock launcher: %1$s</string>
+    <string name="stock_redirect_waiting">on, waiting for the helper</string>
+    <string name="stock_redirect_enabled">Helper switched on</string>
+    <string name="stock_redirect_enable_hint">Switch on the accessibility service %1$s, then come back</string>
+    <string name="stock_redirect_hint">No ADB needed. Default home asks Android to make this launcher the home screen. Replace the stock launcher sends the TV back here whenever the stock home screen comes up, at start-up or on Home; it needs the accessibility service named Home button to be on.</string>
 </resources>

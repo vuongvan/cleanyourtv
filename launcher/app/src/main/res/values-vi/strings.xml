@@ -186,4 +186,14 @@
     <string name="theme_web_sending">Đang gửi</string>
     <string name="theme_web_wrong_pin">Sai mã PIN</string>
     <string name="theme_web_locked">Sai PIN quá nhiều lần. Hãy đóng rồi mở lại màn hình này trên TV.</string>
+
+    <string name="default_home_state">Màn hình chính mặc định: %1$s</string>
+    <string name="default_home_yes">launcher này</string>
+    <string name="default_home_no">chưa phải launcher này (bấm để đổi)</string>
+    <string name="default_home_already">Launcher này đã là màn hình chính mặc định</string>
+    <string name="stock_redirect_state">Thay launcher gốc: %1$s</string>
+    <string name="stock_redirect_waiting">bật, đang chờ dịch vụ trợ năng</string>
+    <string name="stock_redirect_enabled">Đã bật dịch vụ trợ năng</string>
+    <string name="stock_redirect_enable_hint">Hãy bật dịch vụ trợ năng %1$s rồi quay lại</string>
+    <string name="stock_redirect_hint">Không cần ADB. Mục màn hình chính mặc định nhờ Android đặt launcher này làm màn hình chính. Mục thay launcher gốc tự đưa TV về đây mỗi khi màn hình của launcher gốc hiện lên, lúc khởi động hoặc khi bấm Home; cần bật dịch vụ trợ năng tên Nút Home.</string>
 </resources>
