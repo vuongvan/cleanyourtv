@@ -148,7 +148,7 @@
 
     <!-- Lunar date under the clock (Vietnamese calendar), and its Launcher settings switch. %1$d day, %2$d month,
          %3$s the leap-month mark or nothing, %4$s the stem and branch of the year. -->
-    <string name="lunar_date_format">Lunar date: %1$d/%2$d%3$s · %4$s</string>
+    <string name="lunar_date_format">%1$d/%2$d%3$s Lunar · %4$s</string>
     <string name="lunar_leap"> (leap)</string>
     <string name="lunar_state">Lunar date: %1$s</string>
     <!-- Heavenly stems and earthly branches that name a lunar year (pinyin here; Vietnamese and Chinese in their folders). -->
@@ -182,12 +182,11 @@
     <!-- Dock only, and where the dock sits (Launcher settings). -->
     <string name="dock_only_state">Show only the dock: %1$s</string>
     <string name="dock_only_hint">Hides every row under the dock. Open the other apps from the App library button at the top (it is shown automatically).</string>
-    <string name="dock_position_label">Dock position</string>
-    <string name="dock_position_default">Default</string>
-    <string name="dock_position_low">Low</string>
-    <string name="dock_position_lower">Lower</string>
-    <string name="dock_position_bottom">Bottom</string>
-    <string name="dock_position_hint">Moves the dock down towards the bottom edge. Applies when there are no rows under the dock (0 rows, or Show only the dock).</string>
+    <string name="dock_position_state">Lower the dock: %1$d dp</string>
+    <string name="dock_position_off">Lower the dock: off</string>
+    <string name="dock_position_hint">Moves the dock down towards the bottom edge of the screen. Rows under the dock are pushed off screen; turn on Show only the dock to hide them.</string>
+    <string name="hero_title_state">App name size above the dock: %1$d sp</string>
+    <string name="hero_title_default">App name size above the dock: default</string>
 
     <!-- Wallpaper picked straight from the TV's storage. -->
     <string name="wallpaper_pick_image">Choose a picture from storage…</string>
