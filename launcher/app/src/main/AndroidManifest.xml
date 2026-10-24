@@ -92,6 +92,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
+            <!-- Listed in a phone's or tablet's app drawer, so the launcher can be opened there too (it is landscape
+                 only). Phone apps have no leanback entry point, so add the ones to show through the App library. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
 
         <activity
