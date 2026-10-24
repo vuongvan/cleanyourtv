@@ -36,6 +36,7 @@ public final class LauncherSettingsActivity extends Activity {
     private SeekBar dockDownSlider;
     private SeekBar heroTitleSlider;
     private static final int PICK_IMAGE_REQUEST = 41;
+    private static final int PICK_THEME_REQUEST = 42;
     private int columns;
     private int rowsBelowDock;
     private int dockOpacity;
@@ -151,6 +152,9 @@ public final class LauncherSettingsActivity extends Activity {
             reverseRow(rowChoices);
             reverseRow(dockChoices);
         }
+        findViewById(R.id.importThemeChoice).setOnClickListener(v -> pickThemeFile());
+        findViewById(R.id.receiveThemeChoice).setOnClickListener(v ->
+                startActivity(new Intent(this, ThemeReceiveActivity.class)));
         wallpaperChoice = findViewById(R.id.wallpaperChoice);
         wallpaperChoice.setOnClickListener(v -> showWallpaperPicker());
         animationsChoice = findViewById(R.id.animationsChoice);
@@ -298,8 +302,60 @@ public final class LauncherSettingsActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != PICK_IMAGE_REQUEST || resultCode != RESULT_OK || data == null || data.getData() == null) return;
-        importWallpaper(data.getData());
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        if (requestCode == PICK_IMAGE_REQUEST) importWallpaper(data.getData());
+        else if (requestCode == PICK_THEME_REQUEST) importTheme(data.getData());
+    }
+
+    /**
+     * Opens the system file picker for a theme: a config.json, a theme .zip or a picture. Like pickImage, a TV without
+     * a picker falls back to a toast that points at "Receive a theme from a phone".
+     */
+    private void pickThemeFile() {
+        String[] types = {"application/zip", "application/x-zip-compressed", "application/json", "text/plain",
+                "application/octet-stream", "image/*"};
+        Intent[] pickers = {
+                new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")
+                        .putExtra(Intent.EXTRA_MIME_TYPES, types),
+                new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")};
+        for (Intent picker : pickers) {
+            try {
+                startActivityForResult(picker, PICK_THEME_REQUEST);
+                return;
+            } catch (ActivityNotFoundException | SecurityException ignored) {
+                // try the next kind of picker
+            }
+        }
+        Toast.makeText(this, R.string.theme_import_unavailable, Toast.LENGTH_LONG).show();
+    }
+
+    /** Copies the picked file aside and puts it into the theme off the main thread, then says how it went. */
+    private void importTheme(Uri uri) {
+        final android.content.ContentResolver resolver = getContentResolver();
+        final File cache = getCacheDir();
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            String name = ThemeIntake.displayName(resolver, uri);
+            String text;
+            File temp = null;
+            try {
+                ThemeImport.Kind kind = ThemeImport.kind(name);
+                if (kind == ThemeImport.Kind.UNKNOWN) throw new ThemeImport.ImportException(ThemeImport.Problem.UNSUPPORTED);
+                temp = ThemeIntake.copyToTemp(resolver, uri, cache, ThemeImport.maxBytes(kind));
+                text = ThemeIntake.summary(app.getResources(), ThemeIntake.ingest(app, temp, name));
+            } catch (ThemeImport.ImportException e) {
+                text = getString(R.string.theme_import_failed, ThemeIntake.message(app.getResources(), e.problem));
+            } finally {
+                if (temp != null) temp.delete();
+            }
+            final String shown = text;
+            runOnUiThread(() -> {
+                changed();   // Home rebuilds with the new theme when this screen is left
+                if (isFinishing() || isDestroyed()) return;
+                Toast.makeText(this, shown, Toast.LENGTH_LONG).show();
+                recreate();   // a new config.json resets the choices made on the TV: read them again
+            });
+        }, "theme-import").start();
     }
 
     /** Scales and saves the picked picture off the main thread, then makes it the wallpaper. */
