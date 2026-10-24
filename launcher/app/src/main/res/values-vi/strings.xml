@@ -117,7 +117,7 @@
     <string name="last_opened">Mở lần cuối %1$s</string>
     <string name="tile_move">Di chuyển</string>
 
-    <string name="lunar_date_format">ÂM LỊCH, %1$d THÁNG %2$d%3$s · %4$s</string>
+    <string name="lunar_date_format"%4$s, %1$d THÁNG %2$d%3$s </string>
     <string name="lunar_leap"> (nhuận)</string>
     <string name="lunar_state">Âm lịch: %1$s</string>
     <string-array name="lunar_can">
