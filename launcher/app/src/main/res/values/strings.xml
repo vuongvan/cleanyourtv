@@ -185,7 +185,7 @@
     <string name="dock_position_state">Lower the dock: %1$d dp</string>
     <string name="dock_position_off">Lower the dock: off</string>
     <string name="dock_position_hint">Moves the dock down towards the bottom edge of the screen. Rows under the dock are pushed off screen; turn on Show only the dock to hide them.</string>
-    <string name="hero_title_state">App name size above the dock: %1$d sp</string>
+    <string name="hero_title_state">App name size above the dock: %1$+d sp</string>
     <string name="hero_title_default">App name size above the dock: default</string>
 
     <!-- Wallpaper picked straight from the TV's storage. -->
