@@ -34,6 +34,11 @@ final class WallpaperImport {
         return fileName != null && fileName.startsWith(PREFIX);
     }
 
+    /** Somewhere a picture can be read from more than once (its size first, then its pixels, then its EXIF tag). */
+    interface Source {
+        InputStream open() throws IOException;
+    }
+
     /**
      * Saves the picture at {@code uri} into {@code folder} and removes the ones imported before it. Blocking:
      * call it off the main thread.
@@ -41,13 +46,27 @@ final class WallpaperImport {
      * @return the new file's name, or null when the picture could not be read or saved
      */
     static String save(ContentResolver resolver, Uri uri, File folder, int screenW, int screenH) {
+        return save(() -> {
+            InputStream in = resolver.openInputStream(uri);
+            if (in == null) throw new IOException("no stream for " + uri);
+            return in;
+        }, folder, null, screenW, screenH);
+    }
+
+    /**
+     * Saves a picture into {@code folder} as a JPEG scaled to the screen. With a {@code baseName} (a picture sent from
+     * a phone) it is kept under that name next to the others in the collection; without one it becomes the owner's
+     * single picked wallpaper and replaces the one picked before it.
+     *
+     * @return the new file's name, or null when the picture could not be read or saved
+     */
+    static String save(Source source, File folder, String baseName, int screenW, int screenH) {
         Bitmap bitmap = null;
         Bitmap scaled = null;
         try {
             BitmapFactory.Options bounds = new BitmapFactory.Options();
             bounds.inJustDecodeBounds = true;
-            try (InputStream in = resolver.openInputStream(uri)) {
-                if (in == null) return null;
+            try (InputStream in = source.open()) {
                 BitmapFactory.decodeStream(in, null, bounds);
             }
             int w = bounds.outWidth, h = bounds.outHeight;
@@ -55,15 +74,14 @@ final class WallpaperImport {
 
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inSampleSize = WallpaperSize.sampleSize(w, h, screenW, screenH);
-            try (InputStream in = resolver.openInputStream(uri)) {
-                if (in == null) return null;
+            try (InputStream in = source.open()) {
                 bitmap = BitmapFactory.decodeStream(in, null, options);
             }
             if (bitmap == null) return null;
 
             int degrees = 0;
-            try (InputStream in = resolver.openInputStream(uri)) {
-                if (in != null) degrees = rotationDegrees(new ExifInterface(in).getAttributeInt(
+            try (InputStream in = source.open()) {
+                degrees = rotationDegrees(new ExifInterface(in).getAttributeInt(
                         ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL));
             } catch (IOException | RuntimeException ignored) {
                 // no readable EXIF: show the picture as it is
@@ -83,7 +101,7 @@ final class WallpaperImport {
             Bitmap out = scaled != null ? scaled : bitmap;
 
             if (!folder.isDirectory() && !folder.mkdirs()) return null;
-            String name = PREFIX + System.currentTimeMillis() + ".jpg";
+            String name = baseName != null ? baseName + ".jpg" : PREFIX + System.currentTimeMillis() + ".jpg";
             File target = new File(folder, name);
             File temp = new File(folder, name + ".part");
             try (FileOutputStream fos = new FileOutputStream(temp)) {
@@ -93,7 +111,7 @@ final class WallpaperImport {
                 temp.delete();
                 return null;
             }
-            deleteOthers(folder, name);
+            if (baseName == null) deleteOthers(folder, name);
             return name;
         } catch (IOException | RuntimeException | OutOfMemoryError e) {
             return null;

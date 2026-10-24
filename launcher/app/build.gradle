@@ -45,4 +45,6 @@ dependencies {
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
     // Test only (never in the APK): plain JVM tests for the module card validators, src/test.
     testImplementation 'junit:junit:4.13.2'
+    // Test only: the real org.json, so ThemeImport's config.json check runs on the JVM (android.jar's copy only throws).
+    testImplementation 'org.json:json:20231013'
 }
