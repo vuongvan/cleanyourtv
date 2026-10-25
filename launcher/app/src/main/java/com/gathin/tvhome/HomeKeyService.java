@@ -24,6 +24,7 @@ import android.widget.Toast;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -64,12 +65,15 @@ public class HomeKeyService extends AccessibilityService {
     private Map<Integer, String> holdAppKeys = Collections.emptyMap();
     private Map<Integer, String> holdAppScancodes = Collections.emptyMap();
 
+    /** Held here because SharedPreferences keeps its listeners weakly; null until the config has been read once. */
+    private SharedPreferences.OnSharedPreferenceChangeListener redirectListener;
     /** Waits for the user to unlock when Android binds this service at boot; null once the config is read. */
     private BroadcastReceiver unlockReceiver;
     /** The stock launcher's HOME activities (stock_home_redirect), disabled ones included. */
     private final Set<String> stockHome = new HashSet<>();
     /** stock_home_redirect, the stock launcher's package. */
-    private String stockHomePackage = "";
+    /** Packages of the stock launchers to send back here: the theme's stock_home_redirect, plus the ones found on the TV when the owner turned the redirect on. */
+    private final Set<String> stockPackages = new HashSet<>();
     /** power_on_home: the Live TV package to send back to Home, empty when off; armed until this uptime or a key. */
     private String powerOnLiveTv = "";
     private long powerOnUntil;
@@ -142,6 +146,10 @@ public class HomeKeyService extends AccessibilityService {
             }
             standbyExit = null;
         }
+        if (redirectListener != null) {
+            getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(redirectListener);
+            redirectListener = null;
+        }
         if (gamepads != null) gamepads.stop();
         if (consumeVolumeKeys) VolumeKeys.stop();
         super.onDestroy();
@@ -190,14 +198,8 @@ public class HomeKeyService extends AccessibilityService {
         appScancodes = RemoteKeys.parseAppScancodes(config.appKeys);
         RemoteKeys.applyKeyFilter(this, config.keyFilter);
         homeLongPressHome = config.homeLongPressHome;
-        stockHome.clear();
-        stockHomePackage = config.stockHomeRedirect;
-        if (!config.stockHomeRedirect.isEmpty()) {
-            Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setPackage(config.stockHomeRedirect);
-            for (ResolveInfo ri : getPackageManager().queryIntentActivities(home, PackageManager.MATCH_DISABLED_COMPONENTS)) {
-                stockHome.add(ri.activityInfo.name);
-            }
-        }
+        loadStockHome(config);
+        watchRedirectSwitch();
         // power_on_home, off by default. Not with boot_to_live_tv, or with Live TV picked as the Open on start app:
         // those open Live TV on purpose at boot.
         String openOnStart = config.openOnStartChoice
@@ -227,6 +229,34 @@ public class HomeKeyService extends AccessibilityService {
             gamepads = new GamepadPassthrough(this);
             gamepads.start();
         }
+    }
+
+    /**
+     * The stock launchers' HOME activities to send back here: the theme's stock_home_redirect package and, when the
+     * owner turned on "Replace the stock launcher" in Launcher settings, every stock launcher found on the TV.
+     */
+    private void loadStockHome(Config config) {
+        stockHome.clear();
+        stockPackages.clear();
+        Set<String> packages = new LinkedHashSet<>();
+        if (!config.stockHomeRedirect.isEmpty()) packages.add(config.stockHomeRedirect);
+        if (HomeChoices.stockRedirect(this)) packages.addAll(HomeTakeover.stockLauncherPackages(this));
+        stockPackages.addAll(packages);
+        for (String pkg : packages) {
+            Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setPackage(pkg);
+            for (ResolveInfo ri : getPackageManager().queryIntentActivities(home, PackageManager.MATCH_DISABLED_COMPONENTS)) {
+                stockHome.add(ri.activityInfo.name);
+            }
+        }
+    }
+
+    /** Reads the config again when the owner flips the switch, so it takes effect without restarting the helper. */
+    private void watchRedirectSwitch() {
+        if (redirectListener != null) return;
+        redirectListener = (prefs, key) -> {
+            if (HomeChoices.STOCK_REDIRECT_KEY.equals(key)) loadConfig();
+        };
+        getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE).registerOnSharedPreferenceChangeListener(redirectListener);
     }
 
     private boolean isSettingsKey(KeyEvent event) {
@@ -394,7 +424,7 @@ public class HomeKeyService extends AccessibilityService {
         if (stockHome.isEmpty() || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false;
         ResolveInfo home = getPackageManager().resolveActivity(
                 new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), PackageManager.MATCH_DEFAULT_ONLY);
-        return home != null && stockHomePackage.equals(home.activityInfo.packageName);
+        return home != null && stockPackages.contains(home.activityInfo.packageName);
     }
 
     @Override

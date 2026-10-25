@@ -119,4 +119,96 @@
     <string name="race_countdown_days">%1$d ngày %2$d giờ</string>
     <string name="last_opened">Mở lần cuối %1$s</string>
     <string name="tile_move">Di chuyển</string>
+
+    <string name="dock_only_state">Chỉ hiện dock: %1$s</string>
+
+    <string name="dock_only_hint">Ẩn toàn bộ các hàng dưới dock. Mở các ứng dụng còn lại bằng nút Thư viện ứng dụng ở trên cùng (tự động hiện).</string>
+
+    <string name="dock_position_state">Hạ dock xuống: %1$d dp</string>
+
+    <string name="dock_position_off">Hạ dock xuống: tắt</string>
+
+    <string name="dock_position_hint">Dời dock xuống gần mép dưới màn hình. Các hàng dưới dock sẽ bị đẩy ra ngoài màn hình; bật Chỉ hiện dock để ẩn hẳn chúng.</string>
+
+    <string name="hero_title_state">Cỡ chữ tên app trên dock: %1$+d sp</string>
+
+    <string name="hero_title_default">Cỡ chữ tên app trên dock: mặc định</string>
+
+    <string name="wallpaper_pick_image">Chọn ảnh từ bộ nhớ…</string>
+
+    <string name="wallpaper_custom">Ảnh bạn đã chọn</string>
+
+    <string name="wallpaper_pick_unavailable">TV này không có trình chọn tệp. Hãy chép ảnh vào thư mục wallpapers của launcher.</string>
+
+    <string name="wallpaper_pick_failed">Không dùng được ảnh này</string>
+
+    <string name="theme_import">Nhập theme từ tệp…</string>
+
+    <string name="theme_receive">Nhận theme từ điện thoại</string>
+
+    <string name="theme_import_hint">Theme là file config.json, file .zip kèm ảnh nền, hoặc một ảnh riêng. Không cần ADB.</string>
+
+    <string name="theme_import_unavailable">TV này không có trình chọn tệp. Hãy dùng mục Nhận theme từ điện thoại.</string>
+
+    <string name="theme_import_ok">Đã nhập theme (%1$d tệp)</string>
+
+    <string name="theme_import_image_ok">Đã thêm ảnh vào bộ sưu tập hình nền</string>
+
+    <string name="theme_import_failed">Không nhập được: %1$s</string>
+
+    <string name="theme_err_not_json">Đây không phải file config.json hợp lệ</string>
+
+    <string name="theme_err_too_big">Tệp quá lớn</string>
+
+    <string name="theme_err_empty">Tệp trống hoặc không chứa file theme nào</string>
+
+    <string name="theme_err_unreadable">Không đọc được tệp</string>
+
+    <string name="theme_err_unsupported">Hãy gửi config.json, file .zip hoặc ảnh (.jpg, .png, .webp)</string>
+
+    <string name="theme_err_storage">Không lưu được vào thư mục của launcher</string>
+
+    <string name="theme_receive_title">Nhận theme từ điện thoại</string>
+
+    <string name="theme_receive_intro">Trên điện thoại cùng mạng Wi-Fi, mở địa chỉ này bằng trình duyệt:</string>
+
+    <string name="theme_receive_pin">Mã PIN (nhập trên điện thoại)</string>
+
+    <string name="theme_receive_hint">Gửi config.json, file .zip theme hoặc ảnh nền. Nhấn Quay lại khi xong, launcher sẽ nạp lại theme.</string>
+
+    <string name="theme_receive_no_network">TV chưa kết nối mạng</string>
+
+    <string name="theme_receive_start_failed">Không bật được chế độ nhận (cổng 8080 đến 8089 đang bận)</string>
+
+    <string name="theme_web_title">Gửi theme tới TV</string>
+
+    <string name="theme_web_hint">Chọn config.json, file .zip theme hoặc ảnh, nhập mã PIN hiện trên TV rồi bấm Gửi.</string>
+
+    <string name="theme_web_pin_label">Mã PIN</string>
+
+    <string name="theme_web_send">Gửi</string>
+
+    <string name="theme_web_sending">Đang gửi</string>
+
+    <string name="theme_web_wrong_pin">Sai mã PIN</string>
+
+    <string name="theme_web_locked">Sai PIN quá nhiều lần. Hãy đóng rồi mở lại màn hình này trên TV.</string>
+
+    <string name="default_home_state">Màn hình chính mặc định: %1$s</string>
+
+    <string name="default_home_yes">launcher này</string>
+
+    <string name="default_home_no">chưa phải launcher này (bấm để đổi)</string>
+
+    <string name="default_home_already">Launcher này đã là màn hình chính mặc định</string>
+
+    <string name="stock_redirect_state">Thay launcher gốc: %1$s</string>
+
+    <string name="stock_redirect_waiting">bật, đang chờ dịch vụ trợ năng</string>
+
+    <string name="stock_redirect_enabled">Đã bật dịch vụ trợ năng</string>
+
+    <string name="stock_redirect_enable_hint">Hãy bật dịch vụ trợ năng %1$s rồi quay lại</string>
+
+    <string name="stock_redirect_hint">Không cần ADB. Mục màn hình chính mặc định nhờ Android đặt launcher này làm màn hình chính. Mục thay launcher gốc tự đưa TV về đây mỗi khi màn hình của launcher gốc hiện lên, lúc khởi động hoặc khi bấm Home; cần bật dịch vụ trợ năng tên Nút Home.</string>
 </resources>
