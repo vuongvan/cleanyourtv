@@ -9,19 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  lists-and-tools:
-    name: Lists, tools and docs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Tools virtualenv
-        run: |
-          python3 -m venv tools/venv
-          tools/venv/bin/pip install -q -r tools/requirements.txt
-      
+     
   launcher:
     name: Launcher build and unit tests
     runs-on: ubuntu-latest
