@@ -7,10 +7,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,12 +38,23 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
-    private TextView openOnStartChoice;
+    private TextView dockOnlyChoice;
+    private TextView lunarChoice;
+    private TextView dockDownLabel;
+    private TextView heroTitleLabel;
+    private SeekBar dockDownSlider;
+    private SeekBar heroTitleSlider;
+    private static final int PICK_IMAGE_REQUEST = 41;
+    private static final int PICK_THEME_REQUEST = 42;
     private int columns;
     private int rowsBelowDock;
     private int dockOpacity;
     private boolean animations;
     private boolean advancedEffects;
+    private boolean dockOnly;
+    private boolean lunar;
+    private int dockDown;   // dp the dock is lowered by
+    private int heroTitleDelta;   // sp larger (+) or smaller (-) than the theme's size
 
     @Override
     protected void onCreate(Bundle state) {
@@ -97,6 +110,50 @@ public final class LauncherSettingsActivity extends Activity {
                 refresh();
             });
         }
+        dockOnly = HomeChoices.dockOnly(this);
+        lunar = HomeChoices.lunarDate(this);
+        dockDown = HomeChoices.dockDownDp(this);
+        heroTitleDelta = HomeChoices.heroTitleDeltaSp(this);
+        dockOnlyChoice = findViewById(R.id.dockOnlyChoice);
+        dockOnlyChoice.setOnClickListener(v -> {
+            dockOnly = !dockOnly;
+            choices.edit().putBoolean(HomeChoices.DOCK_ONLY_KEY, dockOnly).apply();
+            changed();
+            refresh();
+        });
+        lunarChoice = findViewById(R.id.lunarChoice);
+        lunarChoice.setOnClickListener(v -> {
+            lunar = !lunar;
+            choices.edit().putBoolean(HomeChoices.LUNAR_KEY, lunar).apply();
+            changed();
+            refresh();
+        });
+        dockDownLabel = findViewById(R.id.dockDownLabel);
+        dockDownSlider = findViewById(R.id.dockDownSlider);
+        dockDownSlider.setMax(HomeChoices.DOCK_DOWN_MAX_DP / HomeChoices.DOCK_DOWN_STEP_DP);
+        dockDownSlider.setKeyProgressIncrement(1);
+        dockDownSlider.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override
+            void onUserChange(int progress) {
+                dockDown = progress * HomeChoices.DOCK_DOWN_STEP_DP;
+                choices.edit().putInt(HomeChoices.DOCK_DOWN_KEY, dockDown).apply();
+                changed();
+                refresh();
+            }
+        });
+        heroTitleLabel = findViewById(R.id.heroTitleLabel);
+        heroTitleSlider = findViewById(R.id.heroTitleSlider);
+        heroTitleSlider.setMax(2 * HomeChoices.HERO_TITLE_RANGE_SP / HomeChoices.HERO_TITLE_STEP_SP);
+        heroTitleSlider.setKeyProgressIncrement(1);
+        heroTitleSlider.setOnSeekBarChangeListener(new SimpleSeekListener() {
+            @Override
+            void onUserChange(int progress) {
+                heroTitleDelta = HomeChoices.heroTitleDeltaFromProgress(progress);
+                choices.edit().putInt(HomeChoices.HERO_TITLE_KEY, heroTitleDelta).apply();
+                changed();
+                refresh();
+            }
+        });
         // Keep the numeric choices increasing in the Hebrew reading direction. Reorder the
         // actual views so D-pad focus follows their positions without changing the saved values.
         if (getResources().getBoolean(R.bool.rtl_app_grid)) {
@@ -104,6 +161,9 @@ public final class LauncherSettingsActivity extends Activity {
             reverseRow(rowChoices);
             reverseRow(dockChoices);
         }
+        findViewById(R.id.importThemeChoice).setOnClickListener(v -> pickThemeFile());
+        findViewById(R.id.receiveThemeChoice).setOnClickListener(v ->
+                startActivity(new Intent(this, ThemeReceiveActivity.class)));
         wallpaperChoice = findViewById(R.id.wallpaperChoice);
         wallpaperChoice.setOnClickListener(v -> showWallpaperPicker());
         animationsChoice = findViewById(R.id.animationsChoice);
@@ -136,9 +196,14 @@ public final class LauncherSettingsActivity extends Activity {
         followThemeChoice = findViewById(R.id.followThemeChoice);
         followThemeChoice.setOnClickListener(v -> {
             if (!hasOnTvChoices()) return;
-            choices.edit().remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY).remove("animations")
+            HomeChoices.reset(choices.edit()
+                    .remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY).remove("animations")
                     .remove("advanced_effects").remove(Config.WALLPAPER_CHOICE_KEY)
-                    .remove(Config.DOCK_OPACITY_KEY).remove(OpenOnStart.KEY).commit();
+                    .remove(Config.DOCK_OPACITY_KEY)).commit();
+            dockOnly = HomeChoices.dockOnly(this);
+            lunar = HomeChoices.lunarDate(this);
+            dockDown = HomeChoices.dockDownDp(this);
+            heroTitleDelta = HomeChoices.heroTitleDeltaSp(this);
             Config current = Config.load(this);
             columns = current.columns;
             rowsBelowDock = current.rowsBelowDock;
@@ -172,9 +237,10 @@ public final class LauncherSettingsActivity extends Activity {
         // A theme with a single wallpaper.jpg offers that picture too (Config maps the choice back to it).
         File single = dir == null ? null : new File(dir, Config.WALLPAPER_NAME);
         if (single != null && single.isFile()) images.add(0, single);
-        String[] labels = new String[images.size() + 1];
-        for (int i = 0; i < images.size(); i++) labels[i] = images.get(i).getName();
+        String[] labels = new String[images.size() + 2];
+        for (int i = 0; i < images.size(); i++) labels[i] = wallpaperLabel(images.get(i).getName());
         labels[images.size()] = getString(R.string.wallpaper_none);
+        labels[images.size() + 1] = getString(R.string.wallpaper_pick_image);
         String current = choices.getString(Config.WALLPAPER_CHOICE_KEY, null);
         int checked = "none".equals(current) ? images.size()
                 : indexOf(images, current);
@@ -182,6 +248,10 @@ public final class LauncherSettingsActivity extends Activity {
                 .setTitle(R.string.wallpaper_label)
                 .setSingleChoiceItems(labels, checked, (dialog, which) -> {
                     dialog.dismiss();
+                    if (which == images.size() + 1) {
+                        pickImage();
+                        return;
+                    }
                     if (which == images.size()) {
                         choices.edit().putString(Config.WALLPAPER_CHOICE_KEY, "none").apply();
                     } else {
@@ -201,52 +271,131 @@ public final class LauncherSettingsActivity extends Activity {
                 .show();
     }
 
-    /** Off, then every app with a TV entry point by name. Saved at once; it is read on the next boot. */
-    private void showOpenOnStartPicker() {
-        PackageManager pm = getPackageManager();
-        List<String[]> apps = new ArrayList<>();
-        Intent tv = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
-        for (ResolveInfo r : pm.queryIntentActivities(tv, 0)) {
-            String pkg = r.activityInfo.packageName;
-            if (pkg.equals(getPackageName())) continue;
-            boolean seen = false;
-            for (String[] a : apps) seen |= a[1].equals(pkg);
-            if (!seen) apps.add(new String[]{r.loadLabel(pm).toString(), pkg});
+    /** A SeekBar listener that only cares about changes the owner made (not the ones refresh() makes). */
+    private abstract static class SimpleSeekListener implements SeekBar.OnSeekBarChangeListener {
+        abstract void onUserChange(int progress);
+
+        @Override
+        public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+            if (fromUser) onUserChange(progress);
         }
-        Collections.sort(apps, (a, b) -> a[0].compareToIgnoreCase(b[0]));
-        String[] labels = new String[apps.size() + 1];
-        labels[0] = getString(R.string.off);
-        String current = choices.getString(OpenOnStart.KEY, "");
-        int checked = 0;
-        for (int i = 0; i < apps.size(); i++) {
-            labels[i + 1] = apps.get(i)[0];
-            if (apps.get(i)[1].equals(current)) checked = i + 1;
+
+        @Override
+        public void onStartTrackingTouch(SeekBar bar) {
         }
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.open_on_start_label)
-                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
-                    dialog.dismiss();
-                    if (which == 0) choices.edit().remove(OpenOnStart.KEY).apply();
-                    else {
-                        OpenOnStart.skipThisBoot(this);
-                        choices.edit().putString(OpenOnStart.KEY, apps.get(which - 1)[1]).apply();
-                    }
-                    refresh();
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
+
+        @Override
+        public void onStopTrackingTouch(SeekBar bar) {
+        }
     }
 
-    /** The picked app's name, its package when it is gone, or Off. */
-    private String openOnStartLabel() {
-        String pkg = choices.getString(OpenOnStart.KEY, "");
-        if (pkg.isEmpty()) return getString(R.string.off);
-        try {
-            PackageManager pm = getPackageManager();
-            return pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString();
-        } catch (PackageManager.NameNotFoundException e) {
-            return pkg;
+    /** A saved picture from the owner's storage reads "Your picture" instead of its generated file name. */
+    private String wallpaperLabel(String fileName) {
+        return WallpaperImport.isImported(fileName) ? getString(R.string.wallpaper_custom) : fileName;
+    }
+
+    /**
+     * Opens the system picture picker. Android TV firmware often ships without one, so a second kind of picker is
+     * tried and, when there is none, the owner is told about the wallpapers folder instead.
+     */
+    private void pickImage() {
+        Intent[] pickers = {
+                new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*"),
+                new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*")};
+        for (Intent picker : pickers) {
+            try {
+                startActivityForResult(picker, PICK_IMAGE_REQUEST);
+                return;
+            } catch (ActivityNotFoundException | SecurityException ignored) {
+                // try the next kind of picker
+            }
         }
+        Toast.makeText(this, R.string.wallpaper_pick_unavailable, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        if (requestCode == PICK_IMAGE_REQUEST) importWallpaper(data.getData());
+        else if (requestCode == PICK_THEME_REQUEST) importTheme(data.getData());
+    }
+
+    /**
+     * Opens the system file picker for a theme: a config.json, a theme .zip or a picture. Like pickImage, a TV without
+     * a picker falls back to a toast that points at "Receive a theme from a phone".
+     */
+    private void pickThemeFile() {
+        String[] types = {"application/zip", "application/x-zip-compressed", "application/json", "text/plain",
+                "application/octet-stream", "image/*"};
+        Intent[] pickers = {
+                new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")
+                        .putExtra(Intent.EXTRA_MIME_TYPES, types),
+                new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")};
+        for (Intent picker : pickers) {
+            try {
+                startActivityForResult(picker, PICK_THEME_REQUEST);
+                return;
+            } catch (ActivityNotFoundException | SecurityException ignored) {
+                // try the next kind of picker
+            }
+        }
+        Toast.makeText(this, R.string.theme_import_unavailable, Toast.LENGTH_LONG).show();
+    }
+
+    /** Copies the picked file aside and puts it into the theme off the main thread, then says how it went. */
+    private void importTheme(Uri uri) {
+        final android.content.ContentResolver resolver = getContentResolver();
+        final File cache = getCacheDir();
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            String name = ThemeIntake.displayName(resolver, uri);
+            String text;
+            File temp = null;
+            try {
+                ThemeImport.Kind kind = ThemeImport.kind(name);
+                if (kind == ThemeImport.Kind.UNKNOWN) throw new ThemeImport.ImportException(ThemeImport.Problem.UNSUPPORTED);
+                temp = ThemeIntake.copyToTemp(resolver, uri, cache, ThemeImport.maxBytes(kind));
+                text = ThemeIntake.summary(app.getResources(), ThemeIntake.ingest(app, temp, name));
+            } catch (ThemeImport.ImportException e) {
+                text = getString(R.string.theme_import_failed, ThemeIntake.message(app.getResources(), e.problem));
+            } finally {
+                if (temp != null) temp.delete();
+            }
+            final String shown = text;
+            runOnUiThread(() -> {
+                changed();   // Home rebuilds with the new theme when this screen is left
+                if (isFinishing() || isDestroyed()) return;
+                Toast.makeText(this, shown, Toast.LENGTH_LONG).show();
+                recreate();   // a new config.json resets the choices made on the TV: read them again
+            });
+        }, "theme-import").start();
+    }
+
+    /** Scales and saves the picked picture off the main thread, then makes it the wallpaper. */
+    private void importWallpaper(Uri uri) {
+        File dir = Config.dir(this);
+        if (dir == null) {
+            Toast.makeText(this, R.string.wallpaper_pick_failed, Toast.LENGTH_LONG).show();
+            return;
+        }
+        final File folder = new File(dir, "wallpapers");
+        final android.content.ContentResolver resolver = getContentResolver();
+        final int screenW = Math.max(getResources().getDisplayMetrics().widthPixels,
+                getResources().getDisplayMetrics().heightPixels);
+        final int screenH = Math.min(getResources().getDisplayMetrics().widthPixels,
+                getResources().getDisplayMetrics().heightPixels);
+        new Thread(() -> {
+            String name = WallpaperImport.save(resolver, uri, folder, screenW, screenH);
+            if (name != null) choices.edit().putString(Config.WALLPAPER_CHOICE_KEY, name).apply();
+            runOnUiThread(() -> {
+                if (name != null) changed();   // bumps the change count so Home rebuilds with the new wallpaper
+                if (isFinishing() || isDestroyed()) return;
+                Toast.makeText(this, name != null ? R.string.wallpaper_applied : R.string.wallpaper_pick_failed,
+                        Toast.LENGTH_SHORT).show();
+                refresh();
+            });
+        }, "wallpaper-import").start();
     }
 
     private static int indexOf(List<File> images, String name) {
@@ -293,9 +442,19 @@ public final class LauncherSettingsActivity extends Activity {
         String wallpaperCurrent = choices.getString(Config.WALLPAPER_CHOICE_KEY, null);
         wallpaperChoice.setText(getString(R.string.wallpaper_state,
                 "none".equals(wallpaperCurrent) ? getString(R.string.wallpaper_none)
-                        : wallpaperCurrent != null ? wallpaperCurrent
+                        : wallpaperCurrent != null ? wallpaperLabel(wallpaperCurrent)
                         : getString(R.string.wallpaper_theme_default)));
-        openOnStartChoice.setText(getString(R.string.open_on_start_state, openOnStartLabel()));
+        dockOnlyChoice.setText(getString(R.string.dock_only_state, getString(dockOnly ? R.string.on : R.string.off)));
+        lunarChoice.setText(getString(R.string.lunar_state, getString(lunar ? R.string.on : R.string.off)));
+        dockDownLabel.setText(dockDown == 0 ? getString(R.string.dock_position_off)
+                : getString(R.string.dock_position_state, dockDown));
+        if (dockDownSlider.getProgress() != dockDown / HomeChoices.DOCK_DOWN_STEP_DP) {
+            dockDownSlider.setProgress(dockDown / HomeChoices.DOCK_DOWN_STEP_DP);
+        }
+        heroTitleLabel.setText(heroTitleDelta == 0 ? getString(R.string.hero_title_default)
+                : getString(R.string.hero_title_state, heroTitleDelta));
+        int heroProgress = HomeChoices.heroTitleProgress(heroTitleDelta);
+        if (heroTitleSlider.getProgress() != heroProgress) heroTitleSlider.setProgress(heroProgress);
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 
@@ -303,7 +462,7 @@ public final class LauncherSettingsActivity extends Activity {
         return choices.contains("columns") || choices.contains(Config.ROWS_BELOW_DOCK_KEY)
                 || choices.contains("animations") || choices.contains("advanced_effects")
                 || choices.contains(Config.WALLPAPER_CHOICE_KEY) || choices.contains(Config.DOCK_OPACITY_KEY)
-                || choices.contains(OpenOnStart.KEY);
+                || HomeChoices.anySet(choices);
     }
 
     private void open(Intent intent) {

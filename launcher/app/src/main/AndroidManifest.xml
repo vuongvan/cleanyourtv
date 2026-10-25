@@ -7,6 +7,9 @@
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
+    <!-- Only for "Receive a theme from a phone" (ThemeServer): a listening socket on the local network, open while that
+         screen is showing. The launcher makes no requests to the internet. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- Needed since Android 10 to read the Wi-Fi network name for the network pill. Never requested at
@@ -97,10 +100,21 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
+            <!-- Listed in a phone's or tablet's app drawer, so the launcher can be opened there too (it is landscape
+                 only). Phone apps have no leanback entry point, so add the ones to show through the App library. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
 
         <activity
             android:name=".LauncherSettingsActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name=".ThemeReceiveActivity"
             android:exported="false"
             android:excludeFromRecents="true"
             android:screenOrientation="landscape" />

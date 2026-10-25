@@ -185,10 +185,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The pills have been filled in once; later resumes refresh them after the first frame. */
     private boolean pillsShown;
     private TextView shamsiDate;
-    /** lunar_date: the lunisolar date under the date line, and the time zone it is computed for. */
+    /** The lunar date line under the clock (HomeChoices.lunarDate); gone when the owner turned it off. */
     private TextView lunarDate;
     private boolean lunar;
-    private int lunarOffset;
     private TextView stats;
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
@@ -455,6 +454,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         cinematicWhiteFocus = cfg.cinematicWhiteFocus;
         heroArtAlpha = cfg.cinematicArt / 100f;
         if (cinematic) setUpCinematicShelf(cfg.cinematicScrim);
+        applyHeroTitleSize();
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
         // still follows the dock.
         if (!cfg.dockTitle) hero.setVisibility(View.GONE);
@@ -485,6 +485,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         btnWifi = findViewById(R.id.btnWifi);
         shamsiDate = findViewById(R.id.shamsiDate);
+        lunarDate = findViewById(R.id.lunarDate);
+        lunar = HomeChoices.lunarDate(this);
+        lunarDate.setVisibility(lunar ? View.VISIBLE : View.GONE);
         stats = findViewById(R.id.stats);
         raceCalendar = cfg.raceCalendar;
         racePanel = findViewById(R.id.racePanel);
@@ -602,7 +605,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         // tvOS layout: push the dock row towards the bottom of the screen, leaving room for
         // rows_below_dock grid rows under it; the rest of the grid stays below until you press Down.
-        int rowsBelowDock = cfg.rowsBelowDock;
+        // Dock only (Launcher settings) shows no rows under the dock. The owner can also lower the dock by a number of
+        // dp (HomeChoices.dockDownDp, a slider), with or without rows under it: those rows then run off the bottom.
+        final boolean dockOnlyChoice = cfg.dockRow && HomeChoices.dockOnly(this);
+        final int rowsBelowDock = dockOnlyChoice ? 0 : cfg.rowsBelowDock;
+        final int dockDownPx = cfg.dockRow ? (int) (HomeChoices.dockDownDp(this) * density) : 0;
         grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
             int h = b - t;
             // Item height follows the tile size, which follows the columns and the rows that must fit (AppAdapter.tileWidthPx).
@@ -618,6 +625,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Where the rows cannot fit even at the smallest tile (3 rows with the title on), the title keeps its
             // room above the dock and the last rows run off the bottom instead of the title drawing over the clock.
             if (MainActivity.this.dockRow && cfg.dockTitle && rowsBelowDock > 0) want = Math.max(want, (int) (AppAdapter.TITLE_ROOM_DP * density));
+            // The owner's slider: lower the dock, but never past the screen's bottom edge (the band's 12 dp below the
+            // tiles may go off screen, so the tiles themselves can reach it).
+            if (dockDownPx > 0) want = Math.min(want + dockDownPx, Math.max(want, h - dockRow + (int) (12 * density)));
             // No dock to push down: the grid starts at the top, with room for the first row's zoom and glass.
             if (!MainActivity.this.dockRow) want = (int) (AppAdapter.TOP_ROOM_DP * density);
             // A single row never shows the names under its tiles (the title above the row names the app), so the
@@ -730,8 +740,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             onLibraryRequested();
             libraryFromTopBar = true;   // closing it goes back to this button, not to the pill after the last row
         });
-        btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
-        addTopBarApps(cfg.topBarApps, cfg.launchActions);
+        // With the rows hidden (dock only) the library is the way to the other apps, so its button always shows.
+        btnLibraryTop.setVisibility((cfg.libraryButton || dockOnlyChoice) && cfg.appLibrary ? View.VISIBLE : View.GONE);
         iconOnlyButtons = cfg.iconOnlyButtons;
         topMenu = cfg.topMenu;
         wifiIconOnly = iconOnlyButtons && cfg.wifiLabelWidth <= 0;
@@ -1337,7 +1347,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         dockedAtStart = adapter.dockFilled();
         for (int i = 0; i < Math.min(dockedAtStart, adapter.movableCount()); i++) dockInSession.add(adapter.keyAt(i));
         adapter.setReordering(true);
-        if (adapter.hasEmptySlots()) reloadTiles();   // every position must hold a tile that can move
+        if (adapter.hasEmptySlots() || adapter.isDockOnly()) reloadTiles();   // every position must hold a tile that can move
         reordering = true;
         orderAtStart = adapter.movableKeys();
         glass.setAccent(REORDER_ACCENT);
@@ -1505,7 +1515,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 Toast.makeText(this, R.string.reorder_not_saved, Toast.LENGTH_SHORT).show();
             }
         }
-        if (fillDockLeavesSlots) reloadTiles();   // the empty dock slots left out while reordering come back
+        // The empty dock slots left out while reordering come back; dock only hides the other tiles again.
+        if (fillDockLeavesSlots || adapter.isDockOnly()) reloadTiles();
     }
 
     /**
@@ -1781,6 +1792,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!cinematic) return;
         updateHeroMeta(position);
         updateHeroDots(position);
+    }
+
+    /** Makes the app name above the dock larger or smaller than the theme's size by the owner's change (Launcher settings). */
+    private void applyHeroTitleSize() {
+        int delta = HomeChoices.heroTitleDeltaSp(this);
+        if (delta == 0) return;
+        float themeSp = heroName.getTextSize() / getResources().getDisplayMetrics().scaledDensity;
+        heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, HomeChoices.heroTitleSp(Math.round(themeSp), delta));
     }
 
     // ---- cinematic shelf -------------------------------------------------------------------------
@@ -2516,7 +2535,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             greeting.setTextColor(greetingColor);
         }
         if (shamsi) shamsiDate.setText(Shamsi.today(getResources()));
-        if (lunar) lunarDate.setText(Lunar.today(getResources(), lunarOffset));
+        if (lunar) lunarDate.setText(LunarDate.today(getResources()));
     }
 
     // ---- race-weekend panel (a theme's race_calendar) -----------------------------------------------

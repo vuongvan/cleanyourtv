@@ -149,4 +149,81 @@
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Last opened %1$s</string>
+
+    <!-- Lunar date under the clock (Vietnamese calendar), and its Launcher settings switch. %1$d day, %2$d month,
+         %3$s the leap-month mark or nothing, %4$s the stem and branch of the year. -->
+    <string name="lunar_date_format">%1$d/%2$d%3$s Lunar · %4$s</string>
+    <string name="lunar_leap"> (leap)</string>
+    <string name="lunar_state">Lunar date: %1$s</string>
+    <!-- Heavenly stems and earthly branches that name a lunar year (pinyin here; Vietnamese and Chinese in their folders). -->
+    <string-array name="lunar_can">
+        <item>Jia</item>
+        <item>Yi</item>
+        <item>Bing</item>
+        <item>Ding</item>
+        <item>Wu</item>
+        <item>Ji</item>
+        <item>Geng</item>
+        <item>Xin</item>
+        <item>Ren</item>
+        <item>Gui</item>
+    </string-array>
+    <string-array name="lunar_chi">
+        <item>Zi</item>
+        <item>Chou</item>
+        <item>Yin</item>
+        <item>Mao</item>
+        <item>Chen</item>
+        <item>Si</item>
+        <item>Wu</item>
+        <item>Wei</item>
+        <item>Shen</item>
+        <item>You</item>
+        <item>Xu</item>
+        <item>Hai</item>
+    </string-array>
+
+    <!-- Dock only, and where the dock sits (Launcher settings). -->
+    <string name="dock_only_state">Show only the dock: %1$s</string>
+    <string name="dock_only_hint">Hides every row under the dock. Open the other apps from the App library button at the top (it is shown automatically).</string>
+    <string name="dock_position_state">Lower the dock: %1$d dp</string>
+    <string name="dock_position_off">Lower the dock: off</string>
+    <string name="dock_position_hint">Moves the dock down towards the bottom edge of the screen. Rows under the dock are pushed off screen; turn on Show only the dock to hide them.</string>
+    <string name="hero_title_state">App name size above the dock: %1$+d sp</string>
+    <string name="hero_title_default">App name size above the dock: default</string>
+
+    <!-- Wallpaper picked straight from the TV's storage. -->
+    <string name="wallpaper_pick_image">Choose a picture from storage…</string>
+    <string name="wallpaper_custom">Your picture</string>
+    <string name="wallpaper_pick_unavailable">This TV has no file picker. Copy pictures into the wallpapers folder of the launcher instead.</string>
+    <string name="wallpaper_pick_failed">That picture could not be used</string>
+
+    <!-- Theme without ADB: import a file in Launcher settings, or receive files from a phone on the same network. -->
+    <string name="theme_import">Import theme from a file…</string>
+    <string name="theme_receive">Receive theme from a phone</string>
+    <string name="theme_import_hint">A theme is a config.json, a .zip of it with wallpapers, or a single picture. No ADB needed.</string>
+    <string name="theme_import_unavailable">This TV has no file picker. Use Receive theme from a phone instead.</string>
+    <string name="theme_import_ok">Theme imported (%1$d files)</string>
+    <string name="theme_import_image_ok">Picture added to the wallpaper collection</string>
+    <string name="theme_import_failed">Could not import: %1$s</string>
+    <string name="theme_err_not_json">That is not a valid config.json</string>
+    <string name="theme_err_too_big">The file is too large</string>
+    <string name="theme_err_empty">The file is empty or holds no theme files</string>
+    <string name="theme_err_unreadable">The file could not be read</string>
+    <string name="theme_err_unsupported">Send a config.json, a .zip or a picture (.jpg, .png, .webp)</string>
+    <string name="theme_err_storage">Could not save to the launcher folder</string>
+    <string name="theme_receive_title">Receive theme from a phone</string>
+    <string name="theme_receive_intro">On a phone on the same Wi-Fi, open this address in a browser:</string>
+    <string name="theme_receive_pin">PIN (type it on the phone)</string>
+    <string name="theme_receive_hint">Send config.json, a theme .zip or wallpapers. Press Back when done: the launcher then reloads the theme.</string>
+    <string name="theme_receive_no_network">The TV is not connected to a network</string>
+    <string name="theme_receive_start_failed">Could not start receiving (ports 8080 to 8089 are busy)</string>
+    <!-- The page the phone shows. -->
+    <string name="theme_web_title">Send a theme to the TV</string>
+    <string name="theme_web_hint">Choose config.json, a theme .zip or pictures, type the PIN shown on the TV, then press Send.</string>
+    <string name="theme_web_pin_label">PIN</string>
+    <string name="theme_web_send">Send</string>
+    <string name="theme_web_sending">Sending</string>
+    <string name="theme_web_wrong_pin">Wrong PIN</string>
+    <string name="theme_web_locked">Too many wrong PINs. Close and reopen this screen on the TV.</string>
 </resources>

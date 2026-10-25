@@ -89,9 +89,101 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/dockOnlyChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="28dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/dock_only_hint"
+            android:textColor="#FFACB8C1"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/dockDownLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:textColor="#FFFFFFFF"
+            android:textSize="20sp" />
+
+        <SeekBar
+            android:id="@+id/dockDownSlider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/settings_choice_bg"
+            android:focusable="true"
+            android:max="60"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:progressTint="#FF4DAE6D"
+            android:thumbTint="#FFB9E7C7" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/dock_position_hint"
+            android:textColor="#FFACB8C1"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/heroTitleLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:textColor="#FFFFFFFF"
+            android:textSize="20sp" />
+
+        <SeekBar
+            android:id="@+id/heroTitleSlider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/settings_choice_bg"
+            android:focusable="true"
+            android:max="24"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:progressTint="#FF4DAE6D"
+            android:thumbTint="#FFB9E7C7" />
+
+        <TextView
+            android:id="@+id/lunarChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="28dp" />
+
+        <TextView
             android:id="@+id/wallpaperChoice"
             style="@style/SettingsRow"
             android:layout_marginTop="28dp" />
+
+        <TextView
+            android:id="@+id/importThemeChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp"
+            android:text="@string/theme_import" />
+
+        <TextView
+            android:id="@+id/receiveThemeChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="10dp"
+            android:text="@string/theme_receive" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/theme_import_hint"
+            android:textColor="#FFACB8C1"
+            android:textSize="14sp" />
 
         <TextView
             android:id="@+id/animationsChoice"
