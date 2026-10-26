@@ -10,7 +10,8 @@
     <string name="not_connected">Không có thiết bị</string>
     <string name="live_tv">Truyền hình</string>
     <string name="no_inputs">Không tìm thấy nguồn vào</string>
-    <!-- Vietnamese greets the same way at any hour. -->
+    <!-- The day parts follow the default hours in MainActivity.updateGreeting: morning 05-12, afternoon 12-17,
+         evening 17-22, night 22-05. -->
     <string name="good_morning">Chào buổi sáng</string>
     <string name="good_afternoon">Chào buổi chiều</string>
     <string name="good_evening">Chào buổi tối</string>
@@ -174,7 +175,8 @@
 
     <string name="theme_receive_pin">Mã PIN (nhập trên điện thoại)</string>
 
-    <string name="theme_receive_hint">Gửi config.json, file .zip theme hoặc ảnh nền. Nhấn Quay lại khi xong, launcher sẽ nạp lại theme.</string>
+    <string name="theme_receive_hint">Gửi config.json, file .zip theme hoặc ảnh nền. Nhấn Quay lại khi xong, launcher sẽ nạp lại theme. Chế độ nhận tự dừng sau 10 phút không dùng.</string>
+    <string name="theme_receive_idle">Đã tự dừng sau 10 phút không dùng. Nhấn OK để bật lại.</string>
 
     <string name="theme_receive_no_network">TV chưa kết nối mạng</string>
 

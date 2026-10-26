@@ -2,6 +2,7 @@ package com.gathin.tvhome;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -19,6 +20,8 @@ public class ThemeReceiveActivity extends Activity {
     private TextView pinText;
     private TextView log;
     private ThemeServer server;
+    /** True after the server stopped by itself for lack of use: OK starts it again. */
+    private boolean idleStopped;
     private final StringBuilder lines = new StringBuilder();
 
     @Override
@@ -51,6 +54,7 @@ public class ThemeReceiveActivity extends Activity {
             showProblem(R.string.theme_receive_no_network);
             return;
         }
+        idleStopped = false;
         String pin = ThemeServer.newPin();
         ThemeServer candidate = new ThemeServer(this, pin, (name, ok, message) -> runOnUiThread(() -> {
             lines.append(ok ? "\u2713 " : "\u2717 ").append(name).append(": ").append(message).append('\n');
@@ -58,6 +62,12 @@ public class ThemeReceiveActivity extends Activity {
             log.setVisibility(View.VISIBLE);
         }));
         try {
+            candidate.setOnIdle(() -> runOnUiThread(() -> {
+                if (server != candidate) return;   // this screen already moved on
+                server = null;
+                idleStopped = true;
+                showProblem(R.string.theme_receive_idle);
+            }));
             int port = candidate.start();
             server = candidate;
             StringBuilder urls = new StringBuilder();
@@ -72,6 +82,17 @@ public class ThemeReceiveActivity extends Activity {
         } catch (IOException e) {
             showProblem(R.string.theme_receive_start_failed);
         }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        boolean ok = keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER
+                || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || keyCode == KeyEvent.KEYCODE_BUTTON_A;
+        if (ok && idleStopped) {
+            startServer();   // a new PIN, a fresh idle time
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     private void showProblem(int message) {

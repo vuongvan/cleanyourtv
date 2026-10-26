@@ -207,7 +207,8 @@
 
     <string name="theme_receive_pin">PIN (type it on the phone)</string>
 
-    <string name="theme_receive_hint">Send config.json, a theme .zip or wallpapers. Press Back when done: the launcher then reloads the theme.</string>
+    <string name="theme_receive_hint">Send config.json, a theme .zip or wallpapers. Press Back when done: the launcher then reloads the theme. Receiving stops by itself after 10 minutes without use.</string>
+    <string name="theme_receive_idle">Stopped after 10 minutes without use. Press OK to start again.</string>
 
     <string name="theme_receive_no_network">The TV is not connected to a network</string>
 

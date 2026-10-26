@@ -57,6 +57,8 @@ final class ThemeServer {
     private static final int BACKLOG = 8;
     private static final int MAX_QUEUED = 8;
     private static final int MAX_ACCEPT_FAILURES = 25;
+    /** The server stops by itself when nobody has connected for this long (the owner forgot it, or left the screen on). */
+    static final long IDLE_TIMEOUT_MS = 10L * 60 * 1000;
     private static final long MAX_DRAIN_BYTES = 64L * 1024 * 1024;
 
     private final Context app;
@@ -67,11 +69,38 @@ final class ThemeServer {
     private ExecutorService pool;
     private ServerSocket server;
     private volatile boolean stopped;
+    private final long idleMillis;
+    private final AtomicInteger active = new AtomicInteger();
+    private volatile long lastActivity = nowMillis();
+    private volatile Runnable onIdle;
 
     ThemeServer(Context ctx, String pin, Listener listener) {
+        this(ctx, pin, listener, IDLE_TIMEOUT_MS);
+    }
+
+    /** {@code idleMillis} is how long without a connection ends the server (a short one lets tests see it stop). */
+    ThemeServer(Context ctx, String pin, Listener listener, long idleMillis) {
         this.app = ctx.getApplicationContext();
         this.pin = pin;
         this.listener = listener;
+        this.idleMillis = idleMillis;
+    }
+
+    /** Called, from the server's own thread, after the server stopped because nobody used it for the idle time. */
+    void setOnIdle(Runnable onIdle) {
+        this.onIdle = onIdle;
+    }
+
+    private static long nowMillis() {
+        return System.nanoTime() / 1_000_000L;
+    }
+
+    /**
+     * True when the server should stop: nothing is being served and the last connection was {@code idleMillis} ago or
+     * more. A transfer in progress never counts as idle, however long it takes.
+     */
+    static boolean idleExpired(long now, long lastActivity, long idleMillis, int activeConnections) {
+        return activeConnections == 0 && now - lastActivity >= idleMillis;
     }
 
     /** A new six-digit PIN. */
@@ -121,6 +150,26 @@ final class ThemeServer {
         }, "theme-server-accept");
         acceptor.setDaemon(true);
         acceptor.start();
+        lastActivity = nowMillis();
+        Thread watchdog = new Thread(() -> {
+            while (!stopped) {
+                long now = nowMillis();
+                if (idleExpired(now, lastActivity, idleMillis, active.get())) {
+                    stop();
+                    Runnable done = onIdle;
+                    if (done != null) done.run();
+                    return;
+                }
+                long wait = active.get() > 0 ? 1000 : idleMillis - (now - lastActivity);
+                try {
+                    Thread.sleep(Math.max(100, Math.min(wait, 5000)));
+                } catch (InterruptedException interrupted) {
+                    return;
+                }
+            }
+        }, "theme-server-idle");
+        watchdog.setDaemon(true);
+        watchdog.start();
         return server.getLocalPort();
     }
 
@@ -170,6 +219,17 @@ final class ThemeServer {
     }
 
     private void handle(Socket socket) {
+        active.incrementAndGet();
+        lastActivity = nowMillis();
+        try {
+            serve(socket);
+        } finally {
+            lastActivity = nowMillis();   // the idle time counts from the end of the last request
+            active.decrementAndGet();
+        }
+    }
+
+    private void serve(Socket socket) {
         try (Socket s = socket) {
             s.setSoTimeout(TIMEOUT_MS);
             if (!isLocalClient(s.getInetAddress())) return;
