@@ -28,8 +28,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -51,6 +54,9 @@ final class ThemeServer {
     private static final int MAX_LINE = 8192;
     private static final int MAX_HEADERS = 60;
     private static final int TIMEOUT_MS = 30_000;
+    private static final int BACKLOG = 8;
+    private static final int MAX_QUEUED = 8;
+    private static final int MAX_ACCEPT_FAILURES = 25;
     private static final long MAX_DRAIN_BYTES = 64L * 1024 * 1024;
 
     private final Context app;
@@ -78,31 +84,53 @@ final class ThemeServer {
         IOException last = null;
         for (int port = FIRST_PORT; port <= LAST_PORT; port++) {
             try {
-                server = new ServerSocket(port);
+                server = new ServerSocket(port, BACKLOG);
                 break;
             } catch (IOException e) {
                 last = e;
             }
         }
         if (server == null) throw last != null ? last : new IOException("no free port");
-        pool = Executors.newFixedThreadPool(3, r -> {
+        // Three workers and a short queue: a burst of connections is refused (closed) instead of piling up.
+        pool = new ThreadPoolExecutor(3, 3, 0L, TimeUnit.SECONDS, new ArrayBlockingQueue<>(MAX_QUEUED), r -> {
             Thread t = new Thread(r, "theme-server");
             t.setDaemon(true);
             return t;
         });
         Thread acceptor = new Thread(() -> {
+            int failures = 0;
             while (!stopped) {
+                Socket socket = null;
                 try {
-                    Socket socket = server.accept();
-                    pool.execute(() -> handle(socket));
+                    socket = server.accept();
+                    failures = 0;
+                    final Socket accepted = socket;
+                    pool.execute(() -> handle(accepted));
+                } catch (RejectedExecutionException busy) {
+                    closeQuietly(socket);   // too many at once: drop this one
                 } catch (IOException | RuntimeException e) {
-                    if (stopped) return;
+                    closeQuietly(socket);
+                    if (stopped || ++failures > MAX_ACCEPT_FAILURES) return;   // do not spin on a broken socket
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException interrupted) {
+                        return;
+                    }
                 }
             }
         }, "theme-server-accept");
         acceptor.setDaemon(true);
         acceptor.start();
         return server.getLocalPort();
+    }
+
+    private static void closeQuietly(Socket socket) {
+        if (socket == null) return;
+        try {
+            socket.close();
+        } catch (IOException ignored) {
+            // already closed
+        }
     }
 
     void stop() {
