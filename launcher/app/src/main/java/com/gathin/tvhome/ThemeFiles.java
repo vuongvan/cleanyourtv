@@ -10,6 +10,9 @@ final class ThemeFiles {
     private static final Pattern IMAGE = Pattern.compile("[A-Za-z0-9_.-]+\\.(jpg|jpeg|png|webp)",
             Pattern.CASE_INSENSITIVE);
 
+    /** A channel card's picture, kenh-<slug>.jpg (see LinkTiles): the slug is the card's name in lower-case a-z0-9. */
+    private static final Pattern KENH = Pattern.compile("kenh-[a-z0-9]{1,40}\\.jpg");
+
     private ThemeFiles() {}
 
     /** The path relative to the theme directory, e.g. "config.json" or "wallpapers/dusk.jpg", or null if refused. */
@@ -18,7 +21,7 @@ final class ThemeFiles {
         if (segments.size() == 1) {
             String name = segments.get(0);
             return Config.FILE_NAME.equals(name) || "wallpaper.jpg".equals(name) || "theme_revision".equals(name)
-                    ? name : null;
+                    || (name != null && KENH.matcher(name).matches()) ? name : null;
         }
         if (segments.size() == 2 && WALLPAPERS.equals(segments.get(0))
                 && (collectionImage(segments.get(1)) || WallpaperCaptions.FILE_NAME.equals(segments.get(1)))) {

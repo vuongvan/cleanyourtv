@@ -49,4 +49,14 @@ public class ThemeFilesTest {
         assertFalse(ThemeFiles.isCollection(Arrays.asList("wallpapers", "dusk.jpg")));
         assertFalse(ThemeFiles.isCollection(Collections.singletonList("config.json")));
     }
+
+    @Test public void channelCardPicturesAreAllowedByTheirNameOnly() {
+        assertEquals("kenh-vtv1.jpg", ThemeFiles.path(Collections.singletonList("kenh-vtv1.jpg")));
+        assertEquals("kenh-vtv5tynamb.jpg", ThemeFiles.path(Collections.singletonList("kenh-vtv5tynamb.jpg")));
+        assertNull(ThemeFiles.path(Collections.singletonList("kenh-VTV1.jpg")));
+        assertNull(ThemeFiles.path(Collections.singletonList("kenh-.jpg")));
+        assertNull(ThemeFiles.path(Collections.singletonList("kenh-vtv1.png")));
+        assertNull(ThemeFiles.path(Collections.singletonList("kenh-../x.jpg")));
+        assertNull(ThemeFiles.path(Collections.singletonList("kenh-vtv1.jpg.exe")));
+    }
 }

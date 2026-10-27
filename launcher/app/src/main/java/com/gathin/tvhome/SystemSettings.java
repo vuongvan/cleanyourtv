@@ -46,6 +46,7 @@ final class SystemSettings {
 
     /** The TV's App info page for pkg, or null where the firmware has none (CVTE's settings app, #1202). */
     static Intent appInfo(Context context, String pkg) {
+        if (LinkTiles.isLinkPackage(pkg)) return null;   // a channel card is no installed app: nothing to show info for
         Intent info = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + pkg));
         return context.getPackageManager().resolveActivity(info, PackageManager.MATCH_DEFAULT_ONLY) != null ? info : null;
     }

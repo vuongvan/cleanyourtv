@@ -41,6 +41,7 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView openOnStartChoice;
     private TextView dockOnlyChoice;
     private TextView defaultHomeChoice;
+    private TextView channelTilesChoice;
     private TextView stockRedirectChoice;
     private TextView dockDownLabel;
     private TextView heroTitleLabel;
@@ -118,6 +119,8 @@ public final class LauncherSettingsActivity extends Activity {
         stockRedirect = HomeChoices.stockRedirect(this);
         // The default-home row that was already here: it now tries Android's role dialog first (HomeTakeover) and falls
         // back to the Home picker with the same help text as before, and shows whether this launcher is the default.
+        channelTilesChoice = findViewById(R.id.channelTilesChoice);
+        channelTilesChoice.setOnClickListener(v -> startActivity(new Intent(this, ChannelTilesActivity.class)));
         defaultHomeChoice = findViewById(R.id.defaultHomeChoice);
         defaultHomeChoice.setOnClickListener(v -> HomeTakeover.requestDefaultHome(this));
         stockRedirectChoice = findViewById(R.id.stockRedirectChoice);
@@ -510,6 +513,7 @@ public final class LauncherSettingsActivity extends Activity {
                         : wallpaperCurrent != null ? wallpaperLabel(wallpaperCurrent)
                         : getString(R.string.wallpaper_theme_default)));
         openOnStartChoice.setText(getString(R.string.open_on_start_state, openOnStartLabel()));
+        channelTilesChoice.setText(getString(R.string.channel_tiles_state, HomeChoices.channelIds(this).size()));
         defaultHomeChoice.setText(getString(R.string.default_home_state,
                 getString(HomeTakeover.isDefaultHome(this) ? R.string.default_home_yes : R.string.default_home_no)));
         stockRedirectChoice.setText(getString(R.string.stock_redirect_state, getString(!stockRedirect ? R.string.off

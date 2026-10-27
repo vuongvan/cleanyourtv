@@ -213,4 +213,15 @@
     <string name="stock_redirect_enable_hint">Hãy bật dịch vụ trợ năng %1$s rồi quay lại</string>
 
     <string name="stock_redirect_hint">Không cần ADB. Mục màn hình chính mặc định nhờ Android đặt launcher này làm màn hình chính. Mục thay launcher gốc tự đưa TV về đây mỗi khi màn hình của launcher gốc hiện lên, lúc khởi động hoặc khi bấm Home; cần bật dịch vụ trợ năng tên Nút Home.</string>
+
+    <string name="channel_tiles_state">Card kênh TV trên màn hình chính: %1$d</string>
+    <string name="channel_tiles_title">Card kênh TV</string>
+    <string name="channel_tiles_intro">Chọn các kênh để đặt ở đầu dock. Bấm vào card sẽ mở thẳng kênh trong VTVgo hoặc FPT Play, hai ứng dụng này phải được cài trên TV. Muốn thêm kênh khác, dùng link_tiles trong config.json của theme (Tên|gói|liên kết|#màu).</string>
+    <string name="channel_tiles_count">Đã chọn: %1$d/%2$d</string>
+    <string name="channel_tiles_clear">Bỏ chọn tất cả</string>
+    <string name="channel_tiles_limit">Tối đa %1$d kênh</string>
+    <string name="channel_tiles_not_installed"> (chưa cài app)</string>
+    <string name="channel_group_vtvgo">VTVgo</string>
+    <string name="channel_group_national">FPT Play: kênh quốc gia</string>
+    <string name="channel_group_local">FPT Play: kênh địa phương</string>
 </resources>

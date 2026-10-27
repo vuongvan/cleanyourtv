@@ -64,7 +64,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     static final class Entry {
-        static final int APP = 0, HOME_SETTINGS = 1, CARD = 2, EMPTY = 3;
+        static final int APP = 0, HOME_SETTINGS = 1, CARD = 2, EMPTY = 3, LINK = 4;
 
         final int kind;
         final String label;
@@ -78,6 +78,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         int ambient;
         /** uniform_tiles card fill, top and bottom colour; null until sampled from the icon. */
         int[] backdrop;
+        /** A LINK card (a TV channel, see LinkTiles): the link to open, and the app that plays it. */
+        String uri, target;
 
         Entry(String label, ComponentName component, Drawable banner, Drawable icon) {
             this(APP, label, component, banner, icon, null, 0);
@@ -224,7 +226,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.ctx = ctx;
         this.listener = listener;
         this.dockSize = dockSize;
-        this.favourites = cfg.dockApps;
+        // The channel cards the owner picked in Launcher settings come first in the dock (LinkTiles / ChannelCatalog).
+        List<String> pinned = new ArrayList<>(LinkTiles.chosenPackages(ctx));
+        for (String pkg : cfg.dockApps) if (!pinned.contains(pkg)) pinned.add(pkg);
+        this.favourites = pinned;
         this.fillDock = cfg.fillDock;
         this.hidden = new HashSet<>(cfg.hiddenApps);
         this.libraryPreload = new HashSet<>(cfg.libraryApps);
@@ -308,6 +313,14 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             } else {
                 fresh.add(new Entry(label, component, banner, icon));
             }
+        }
+        // Channel cards (VTVgo, FPT Play ...): made-up packages, so hidden_apps and "Remove from Home" apply by name.
+        for (LinkTiles.Link l : LinkTiles.load(ctx)) {
+            if (hidden.contains(l.pkg) || removed.contains(l.pkg)) continue;
+            Entry link = new Entry(Entry.LINK, l.label, new ComponentName(l.pkg, "link"), l.picture, null, null, l.color);
+            link.uri = l.uri;
+            link.target = l.target;
+            fresh.add(link);
         }
         Collections.sort(fresh, (a, b) -> {
             // The owner's own order first; tiles it does not know (new installs) follow by the rule below.
@@ -490,7 +503,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (pos != RecyclerView.NO_POSITION) listener.onTileLongPress(pos, v);
                 return true;
             }
-            Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + e.pkg));
+            // a channel card has no package of its own: its app is the one worth opening Settings for
+            Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + (e.kind == Entry.LINK && e.target != null ? e.target : e.pkg)));
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
                 ctx.startActivity(i);
@@ -502,6 +517,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     /** Opens the tile's activity by explicit component, with no extras: a card can name nothing else. */
     private void launch(Entry e) {
+        if (e.kind == Entry.LINK) {
+            launchLink(e);
+            return;
+        }
         if (e.kind == Entry.HOME_SETTINGS) {
             ctx.startActivity(new Intent(ctx, HomeSettingsActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -523,6 +542,21 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         try {
             ctx.startActivity(i);
             if (cinematic) LastOpened.record(ctx, e.pkg);
+            if (advancedEffects && !reducedMotion && ctx instanceof Activity) {
+                ((Activity) ctx).overridePendingTransition(R.anim.app_open_enter, R.anim.app_open_exit);
+            }
+        } catch (Exception ex) {
+            Toast.makeText(ctx, ctx.getString(R.string.cant_open, e.label), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** A channel card: the channel's link, handled by the app that plays it (explicit package, so no chooser appears). */
+    private void launchLink(Entry e) {
+        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(e.uri))
+                .setPackage(e.target)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+        try {
+            ctx.startActivity(i);
             if (advancedEffects && !reducedMotion && ctx instanceof Activity) {
                 ((Activity) ctx).overridePendingTransition(R.anim.app_open_enter, R.anim.app_open_exit);
             }

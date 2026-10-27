@@ -17,6 +17,8 @@ final class HomeChoices {
      * screen comes up. It is how the TV behaves rather than how Home looks, so "Follow theme" does not clear it.
      */
     static final String STOCK_REDIRECT_KEY = "stock_redirect";
+    /** The TV channels picked for cards on Home (ChannelCatalog ids, comma separated, in order). Owner content, so "Follow theme" keeps it. */
+    static final String CHANNELS_KEY = "home_channels";
 
     /** The dock can be lowered by 0 to this many dp (a slider in steps of {@link #DOCK_DOWN_STEP_DP}). */
     static final int DOCK_DOWN_MAX_DP = 240;
@@ -46,6 +48,15 @@ final class HomeChoices {
     /** True when the owner turned on "replace the stock launcher" (Launcher settings); off by default. */
     static boolean stockRedirect(Context ctx) {
         return prefs(ctx).getBoolean(STOCK_REDIRECT_KEY, false);
+    }
+
+    /** The channel ids picked in Launcher settings, in the order picked (see ChannelCatalog). */
+    static java.util.List<String> channelIds(Context ctx) {
+        return ChannelCatalog.decode(prefs(ctx).getString(CHANNELS_KEY, ""));
+    }
+
+    static void setChannelIds(Context ctx, java.util.List<String> ids) {
+        prefs(ctx).edit().putString(CHANNELS_KEY, ChannelCatalog.encode(ids)).apply();
     }
 
     /** How far the dock is lowered, in dp; 0 is the stock place. */
