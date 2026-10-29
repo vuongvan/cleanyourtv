@@ -251,7 +251,7 @@
     <!-- TV channel cards: pick channels in Launcher settings, each becomes a card at the start of the dock. -->
     <string name="channel_tiles_state">TV channel cards on Home: %1$d</string>
     <string name="channel_tiles_title">TV channel cards</string>
-    <string name="channel_tiles_intro">Tick the channels to put at the start of the dock. A card opens its channel straight in VTVgo or FPT Play, which must be installed on this TV. Other channels can be added with link_tiles in a theme config.json (Name|package|link|#colour).</string>
+    <string name="channel_tiles_intro">Tick the channels to put at the start of the dock. A card opens its channel straight in VTVgo, FPT Play or TV360, which must be installed on this TV. Cards added by a theme config.json (link_tiles) are listed at the end so they can be shown or hidden here; other channels, including more TV360 ones, are added there as Name|package|link|#colour (TV360: com.viettel.tv360.tv and tv360:003).</string>
     <string name="channel_tiles_count">Picked: %1$d of %2$d</string>
     <string name="channel_tiles_clear">Clear all</string>
     <string name="channel_tiles_limit">At most %1$d channels</string>
@@ -259,4 +259,6 @@
     <string name="channel_group_vtvgo">VTVgo</string>
     <string name="channel_group_national">FPT Play: national channels</string>
     <string name="channel_group_local">FPT Play: local channels</string>
+    <string name="channel_group_tv360">TV360</string>
+    <string name="channel_group_config">From config.json (select to show or hide)</string>
 </resources>

@@ -8,7 +8,8 @@ import java.util.regex.Pattern;
 
 /**
  * The TV channels a card on Home can open straight into another app, built in so that choosing them needs no network
- * (the launcher makes no requests of its own): the nine VTV channels in VTVgo and the 61 channels of FPT Play.
+ * (the launcher makes no requests of its own): the nine VTV channels in VTVgo, the 61 channels of FPT Play and VTV1 in
+ * TV360 (which is opened by a command, not a link; see LinkTiles.commandFor).
  * Both the list and the link forms are taken from cleantv-fork (OKenh.kt, PhienLamViec.kt) and have not been
  * re-checked here: VTVgo opens vtvgo://play?mediaType=CHANNEL&amp;contentId=&lt;id&gt;, FPT Play (net.fptplay.ottbox) an
  * https://fptplay.vn/xem-truyen-hinh/&lt;slug&gt; link. The fork says it tried the FPT Play link with VTV1 HD on 26/10/2026.
@@ -17,9 +18,10 @@ import java.util.regex.Pattern;
 final class ChannelCatalog {
     static final String VTVGO_PACKAGE = "vn.vtv.vtvgotv";
     static final String FPT_PACKAGE = "net.fptplay.ottbox";
+    static final String TV360_PACKAGE = LinkTiles.TV360_PACKAGE;
     /** The most channel cards that can be on Home at once (the same cap as link_tiles). */
     static final int MAX_SELECTED = 12;
-    static final String GROUP_VTVGO = "vtvgo", GROUP_NATIONAL = "qg", GROUP_LOCAL = "dp";
+    static final String GROUP_VTVGO = "vtvgo", GROUP_NATIONAL = "qg", GROUP_LOCAL = "dp", GROUP_TV360 = "tv360";
 
     private static final Pattern ID = Pattern.compile("[a-z0-9:_-]{1,60}");
 
@@ -126,6 +128,15 @@ final class ChannelCatalog {
             {"Cà Mau", "ca-mau", "dp"}
     };
 
+    /**
+     * {name, TV360 channel number}: only what the kenh module names, VTV1 = 001 in TV360's list. The names carry
+     * "(TV360)" so their card package differs from the VTVgo channel of the same name. TV360's other numbers are not
+     * in the sources given here: add them with link_tiles ("VTV3|com.viettel.tv360.tv|tv360:003").
+     */
+    private static final String[][] TV360 = {
+            {"VTV1 (TV360)", "001"}
+    };
+
     private static final List<Channel> ALL = build();
 
     private ChannelCatalog() {
@@ -136,6 +147,9 @@ final class ChannelCatalog {
         for (String[] v : VTVGO) {
             out.add(new Channel("vtvgo:" + v[1], v[0], VTVGO_PACKAGE, uriVtvGo(v[1]), GROUP_VTVGO,
                     0xFF000000 | Integer.parseInt(v[2], 16)));
+        }
+        for (String[] t : TV360) {
+            out.add(new Channel("tv360:" + t[1], t[0], TV360_PACKAGE, LinkTiles.TV360_SCHEME + t[1], GROUP_TV360, 0xFFC62828));
         }
         for (String[] f : FPT) {
             out.add(new Channel("fpt:" + f[1], f[0], FPT_PACKAGE, uriFpt(f[1]), f[2], 0xFFE65100));

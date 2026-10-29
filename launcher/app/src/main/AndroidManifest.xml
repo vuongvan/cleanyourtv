@@ -68,6 +68,7 @@
         <!-- TV channel cards (ChannelCatalog, LinkTiles): the apps that play them, so Android 11+ lets the launcher see whether they are installed. -->
         <package android:name="vn.vtv.vtvgotv" />
         <package android:name="net.fptplay.ottbox" />
+        <package android:name="com.viettel.tv360.tv" />
         <package android:name="com.xiaomi.mitv.settings" />
         <package android:name="com.tcl.settings" />
         <package android:name="com.amazon.tv.launcher" />

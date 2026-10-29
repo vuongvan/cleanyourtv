@@ -216,7 +216,7 @@
 
     <string name="channel_tiles_state">Card kênh TV trên màn hình chính: %1$d</string>
     <string name="channel_tiles_title">Card kênh TV</string>
-    <string name="channel_tiles_intro">Chọn các kênh để đặt ở đầu dock. Bấm vào card sẽ mở thẳng kênh trong VTVgo hoặc FPT Play, hai ứng dụng này phải được cài trên TV. Muốn thêm kênh khác, dùng link_tiles trong config.json của theme (Tên|gói|liên kết|#màu).</string>
+    <string name="channel_tiles_intro">Chọn các kênh để đặt ở đầu dock. Bấm vào card sẽ mở thẳng kênh trong VTVgo, FPT Play hoặc TV360, các ứng dụng này phải được cài trên TV. Card thêm bằng config.json của theme (link_tiles) được liệt kê ở cuối để hiện hoặc ẩn tại đây; kênh khác, kể cả thêm kênh TV360, thêm ở đó dạng Tên|gói|liên kết|#màu (TV360: com.viettel.tv360.tv và tv360:003).</string>
     <string name="channel_tiles_count">Đã chọn: %1$d/%2$d</string>
     <string name="channel_tiles_clear">Bỏ chọn tất cả</string>
     <string name="channel_tiles_limit">Tối đa %1$d kênh</string>
@@ -224,4 +224,6 @@
     <string name="channel_group_vtvgo">VTVgo</string>
     <string name="channel_group_national">FPT Play: kênh quốc gia</string>
     <string name="channel_group_local">FPT Play: kênh địa phương</string>
+    <string name="channel_group_tv360">TV360</string>
+    <string name="channel_group_config">Từ config.json (chọn để hiện hoặc ẩn)</string>
 </resources>

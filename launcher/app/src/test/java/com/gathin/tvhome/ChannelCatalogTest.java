@@ -16,12 +16,14 @@ import java.util.Set;
 public class ChannelCatalogTest {
 
     @Test
-    public void theCatalogHasTheNineVtvAndSixtyOneFptChannels() {
-        int vtv = 0, fpt = 0;
+    public void theCatalogHasTheNineVtvSixtyOneFptAndOneTv360Channels() {
+        int vtv = 0, fpt = 0, tv360 = 0;
         for (ChannelCatalog.Channel c : ChannelCatalog.all()) {
             if (c.target.equals(ChannelCatalog.VTVGO_PACKAGE)) vtv++;
             if (c.target.equals(ChannelCatalog.FPT_PACKAGE)) fpt++;
+            if (c.target.equals(ChannelCatalog.TV360_PACKAGE)) tv360++;
         }
+        assertEquals(1, tv360);
         assertEquals(9, vtv);
         assertEquals(61, fpt);
     }
@@ -42,7 +44,7 @@ public class ChannelCatalogTest {
             assertTrue(c.label, c.label.length() > 0 && c.label.length() <= 24);
             assertFalse(c.label, ChannelCatalog.slug(c.label).isEmpty());
             assertTrue(c.pkg(), c.pkg().startsWith(LinkTiles.PREFIX));
-            assertTrue(c.uri, c.uri.startsWith("vtvgo://") || c.uri.startsWith("https://fptplay.vn/xem-truyen-hinh/"));
+            assertTrue(c.uri, c.uri.startsWith("vtvgo://") || c.uri.startsWith("https://fptplay.vn/xem-truyen-hinh/") || c.uri.startsWith("tv360:"));
             assertEquals(0xFF000000, c.color & 0xFF000000);
             // the same line a theme could carry must read back as this card
             LinkTiles.Link l = LinkTiles.parse(c.label + "|" + c.target + "|" + c.uri);
@@ -122,5 +124,49 @@ public class ChannelCatalogTest {
         assertNull(LinkTiles.parse(null));
         assertTrue(LinkTiles.isLinkPackage("vgs.kenh.vtv1"));
         assertFalse(LinkTiles.isLinkPackage("com.google.android.youtube.tv"));
+    }
+
+    @Test
+    public void tv360ChannelsAreOpenedByNumberNotByLink() {
+        ChannelCatalog.Channel c = ChannelCatalog.byId("tv360:001");
+        assertEquals("VTV1 (TV360)", c.label);
+        assertEquals("tv360:001", c.uri);
+        assertEquals("com.viettel.tv360.tv", c.target);
+        // not the same card as the VTVgo VTV1, which has the same name without the suffix
+        assertFalse(c.pkg().equals(ChannelCatalog.byId("vtvgo:1").pkg()));
+        assertEquals("VTV1", LinkTiles.tvName(c.label));
+    }
+
+    @Test
+    public void tv360NumbersAreThreeDigitsFromOneTo999() {
+        assertEquals("001", LinkTiles.tv360Number("1"));
+        assertEquals("001", LinkTiles.tv360Number(" 001 "));
+        assertEquals("073", LinkTiles.tv360Number("73"));
+        assertEquals("999", LinkTiles.tv360Number("999"));
+        assertNull(LinkTiles.tv360Number("0"));
+        assertNull(LinkTiles.tv360Number("000"));
+        assertNull(LinkTiles.tv360Number("1000"));
+        assertNull(LinkTiles.tv360Number("VTV1"));
+        assertNull(LinkTiles.tv360Number("1 2"));
+        assertNull(LinkTiles.tv360Number(null));
+    }
+
+    @Test
+    public void tv360LinesNeedTv360AndARealNumber() {
+        LinkTiles.Link l = LinkTiles.parse("VTV3|com.viettel.tv360.tv|tv360:3|#E8590C");
+        assertEquals("tv360:003", l.uri);
+        assertEquals("vgs.kenh.vtv3", l.pkg);
+        assertNull(LinkTiles.parse("VTV3|vn.vtv.vtvgotv|tv360:3"));
+        assertNull(LinkTiles.parse("VTV3|com.viettel.tv360.tv|tv360:abc"));
+        assertNull(LinkTiles.parse("VTV3|com.viettel.tv360.tv|tv360:0"));
+        assertNull(LinkTiles.parse("VTV3|com.viettel.tv360.tv|tv360:"));
+    }
+
+    @Test
+    public void theNameSentToTv360DropsATrailingBracket() {
+        assertEquals("VTV1", LinkTiles.tvName("VTV1 (TV360)"));
+        assertEquals("HTV7 HD", LinkTiles.tvName("HTV7 HD"));
+        assertEquals("VTV3", LinkTiles.tvName("  VTV3  "));
+        assertEquals("", LinkTiles.tvName(null));
     }
 }

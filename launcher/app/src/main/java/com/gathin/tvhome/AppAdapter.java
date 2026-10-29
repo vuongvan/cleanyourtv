@@ -550,17 +550,13 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    /** A channel card: the channel's link, handled by the app that plays it (explicit package, so no chooser appears). */
+    /** A channel card: the channel's link or command, handled by the app that plays it (see LinkTiles.launch). */
     private void launchLink(Entry e) {
-        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(e.uri))
-                .setPackage(e.target)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-        try {
-            ctx.startActivity(i);
+        if (LinkTiles.launch(ctx, e.target, e.uri, e.label)) {
             if (advancedEffects && !reducedMotion && ctx instanceof Activity) {
                 ((Activity) ctx).overridePendingTransition(R.anim.app_open_enter, R.anim.app_open_exit);
             }
-        } catch (Exception ex) {
+        } else {
             Toast.makeText(ctx, ctx.getString(R.string.cant_open, e.label), Toast.LENGTH_SHORT).show();
         }
     }

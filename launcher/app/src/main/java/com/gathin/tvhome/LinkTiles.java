@@ -47,6 +47,10 @@ final class LinkTiles {
     private static final long MAX_PICTURE_BYTES = 512 * 1024;
     private static final int MAX_PICTURE_WIDTH = 640;
     private static final int DEFAULT_COLOR = 0xFF37474F;
+    /** TV360 for Android TV: it is not opened by a link but by a voice-assistant command (see {@link #commandFor}). */
+    static final String TV360_PACKAGE = "com.viettel.tv360.tv";
+    /** A TV360 card's link is "tv360:" and the channel number in TV360's own list, e.g. tv360:001 (VTV1). */
+    static final String TV360_SCHEME = "tv360:";
 
     private LinkTiles() {
     }
@@ -88,7 +92,7 @@ final class LinkTiles {
             if (seen.add(l.pkg)) out.add(l);
         }
         File dir = Config.dir(ctx);
-        for (Link l : fromConfig(ctx, dir)) {
+        for (Link l : fromConfig(ctx, dir, true)) {
             if (out.size() >= MAX) break;
             if (seen.add(l.pkg)) out.add(l);
         }
@@ -96,7 +100,12 @@ final class LinkTiles {
         return out;
     }
 
-    private static List<Link> fromConfig(Context ctx, File dir) {
+    /** The theme's link_tiles that parse, installed or not: what the channel screen lists so they can be shown or hidden. */
+    static List<Link> configLinks(Context ctx) {
+        return fromConfig(ctx, Config.dir(ctx), false);
+    }
+
+    private static List<Link> fromConfig(Context ctx, File dir, boolean onlyInstalled) {
         List<Link> out = new ArrayList<>();
         if (dir == null) return out;
         File file = new File(dir, Config.FILE_NAME);
@@ -106,7 +115,7 @@ final class LinkTiles {
             if (lines == null) return out;
             for (int i = 0; i < lines.length() && out.size() < MAX; i++) {
                 Link l = parse(lines.optString(i, ""));
-                if (l != null && installed(ctx, l.target)) out.add(l);
+                if (l != null && (!onlyInstalled || installed(ctx, l.target))) out.add(l);
             }
         } catch (Exception ignored) {
             // an unreadable config shows no extra cards; Config reports its own problems
@@ -124,7 +133,64 @@ final class LinkTiles {
         String uri = p[2].trim();
         if (label.isEmpty() || label.length() > 24 || ChannelCatalog.slug(label).isEmpty()) return null;
         if (!target.matches("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+") || uri.isEmpty()) return null;
+        if (uri.startsWith(TV360_SCHEME)) {
+            String number = tv360Number(uri.substring(TV360_SCHEME.length()));
+            if (number == null || !TV360_PACKAGE.equals(target)) return null;   // a TV360 card needs TV360 and a real number
+            uri = TV360_SCHEME + number;
+        }
         return new Link(label, target, uri, p.length >= 4 ? colorOf(p[3], DEFAULT_COLOR) : DEFAULT_COLOR);
+    }
+
+    /** "1", "01" or " 001 " as TV360's three-digit channel number "001"; anything outside 1 to 999 gives null. */
+    static String tv360Number(String text) {
+        if (text == null) return null;
+        String t = text.trim();
+        if (!t.matches("[0-9]{1,3}")) return null;
+        int n = Integer.parseInt(t);
+        return n >= 1 ? String.format(java.util.Locale.ROOT, "%03d", n) : null;
+    }
+
+    /** The channel name TV360 is given besides the number: the card's label without a trailing "(...)" such as "(TV360)". */
+    static String tvName(String label) {
+        return label == null ? "" : label.replaceAll("\\s*\\([^)]*\\)\\s*$", "").trim();
+    }
+
+    /**
+     * The intent that opens a card's channel. TV360 takes the command its voice assistant gets ("watch VTV1 on TV360"):
+     * the SWITCH_CHANNEL data, the channel number and the name, and finds the channel in its own list, starting TV360,
+     * bringing it up or switching channel. Any other app is sent its link by an explicit VIEW. Both forms come from
+     * the kenh module (MoKenh.kt) and are not checked against a TV here.
+     */
+    static android.content.Intent commandFor(String target, String uri, String label) {
+        if (uri.startsWith(TV360_SCHEME)) {
+            return new android.content.Intent(TV360_PACKAGE + ".VIEW", android.net.Uri.parse("content://" + TV360_PACKAGE + "/SWITCH_CHANNEL"))
+                    .setClassName(TV360_PACKAGE, TV360_PACKAGE + ".assistant.PostmanAssistant")
+                    .putExtra("number_channel", uri.substring(TV360_SCHEME.length()))
+                    .putExtra("name_channel", tvName(label));
+        }
+        return new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uri)).setPackage(target);
+    }
+
+    /**
+     * Opens the channel; when the app does not take the command or link (a later version changed it) the app itself is
+     * opened instead. Returns false when neither could be started.
+     */
+    static boolean launch(Context ctx, String target, String uri, String label) {
+        List<android.content.Intent> tries = new ArrayList<>();
+        tries.add(commandFor(target, uri, label));
+        android.content.Intent app = ctx.getPackageManager().getLeanbackLaunchIntentForPackage(target);
+        if (app == null) app = ctx.getPackageManager().getLaunchIntentForPackage(target);
+        if (app != null) tries.add(app);
+        for (android.content.Intent i : tries) {
+            try {
+                ctx.startActivity(i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                        | android.content.Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED));
+                return true;
+            } catch (android.content.ActivityNotFoundException | SecurityException ignored) {
+                // the next way
+            }
+        }
+        return false;
     }
 
     /** "#RRGGBB" (the # is optional) as an opaque colour; anything else gives {@code fallback}. */

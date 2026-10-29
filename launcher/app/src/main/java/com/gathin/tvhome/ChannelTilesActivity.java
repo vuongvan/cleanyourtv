@@ -17,11 +17,15 @@ import java.util.Set;
 
 /**
  * "TV channel cards": the owner ticks the channels (ChannelCatalog) that become cards at the start of the dock, each
- * opening its channel straight in VTVgo or FPT Play. The pick is kept in HomeChoices and Home rebuilds when this screen
- * is left. A channel the owner removed from Home through the tile menu counts as not ticked; ticking it brings it back.
+ * opening its channel straight in VTVgo, FPT Play or TV360. The pick is kept in HomeChoices and Home rebuilds when this
+ * screen is left. A channel the owner removed from Home through the tile menu counts as not ticked; ticking it brings
+ * it back. The cards a theme's config.json adds (link_tiles) are listed under their own heading and can be shown or
+ * hidden here the same way, so every card on Home can be managed from this one screen.
  */
 public class ChannelTilesActivity extends Activity {
     private final Map<String, TextView> rows = new HashMap<>();
+    private final Map<String, TextView> configRows = new HashMap<>();
+    private List<LinkTiles.Link> configLinks = new ArrayList<>();
     private TextView count;
 
     @Override
@@ -43,23 +47,40 @@ public class ChannelTilesActivity extends Activity {
         for (ChannelCatalog.Channel c : ChannelCatalog.all()) {
             if (!c.group.equals(group)) {
                 group = c.group;
-                TextView header = new TextView(this);
-                header.setText(groupTitle(group));
-                header.setTextColor(0xFFB9E7C7);
-                header.setTextSize(20);
-                LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT);
-                p.topMargin = dp(first ? 18 : 26);
-                p.bottomMargin = dp(6);
-                list.addView(header, p);
+                list.addView(header(groupTitle(group), first), headerParams(first));
                 first = false;
             }
             TextView r = row(list, "");
             rows.put(c.id, r);
             r.setOnClickListener(v -> toggle(c));
         }
+        configLinks = LinkTiles.configLinks(this);
+        if (!configLinks.isEmpty()) {
+            list.addView(header(getString(R.string.channel_group_config), false), headerParams(false));
+            for (LinkTiles.Link l : configLinks) {
+                TextView r = row(list, "");
+                configRows.put(l.pkg, r);
+                r.setOnClickListener(v -> toggleConfig(l));
+            }
+        }
         refresh();
         clear.requestFocus();
+    }
+
+    private TextView header(String text, boolean first) {
+        TextView header = new TextView(this);
+        header.setText(text);
+        header.setTextColor(0xFFB9E7C7);
+        header.setTextSize(20);
+        return header;
+    }
+
+    private LinearLayout.LayoutParams headerParams(boolean first) {
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        p.topMargin = dp(first ? 18 : 26);
+        p.bottomMargin = dp(6);
+        return p;
     }
 
     private TextView row(LinearLayout list, String text) {
@@ -79,6 +100,8 @@ public class ChannelTilesActivity extends Activity {
         switch (group) {
             case ChannelCatalog.GROUP_VTVGO:
                 return getString(R.string.channel_group_vtvgo);
+            case ChannelCatalog.GROUP_TV360:
+                return getString(R.string.channel_group_tv360);
             case ChannelCatalog.GROUP_NATIONAL:
                 return getString(R.string.channel_group_national);
             default:
@@ -97,7 +120,7 @@ public class ChannelTilesActivity extends Activity {
         if (isOn(c, ids, removed)) {
             HomeChoices.setChannelIds(this, ChannelCatalog.toggle(ids, c.id, false));
         } else {
-            if (!ids.contains(c.id) && ids.size() >= ChannelCatalog.MAX_SELECTED) {
+            if (!ids.contains(c.id) && shownCount() >= ChannelCatalog.MAX_SELECTED) {
                 Toast.makeText(this, getString(R.string.channel_tiles_limit, ChannelCatalog.MAX_SELECTED), Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -106,6 +129,28 @@ public class ChannelTilesActivity extends Activity {
         }
         ThemeIntake.notifyChanged(this);
         refresh();
+    }
+
+    /** Shows or hides a card that came from config.json: it stays in the file, Home just leaves it out while hidden. */
+    private void toggleConfig(LinkTiles.Link l) {
+        boolean shown = !LibraryApps.loadRemoved(this).contains(l.pkg);
+        if (!shown && shownCount() >= ChannelCatalog.MAX_SELECTED) {
+            Toast.makeText(this, getString(R.string.channel_tiles_limit, ChannelCatalog.MAX_SELECTED), Toast.LENGTH_SHORT).show();
+            return;
+        }
+        LibraryApps.save(this, l.pkg, !shown);   // false = remove from Home, true = bring it back
+        ThemeIntake.notifyChanged(this);
+        refresh();
+    }
+
+    /** How many cards Home shows now from the picked channels and config.json together (Home keeps at most 12). */
+    private int shownCount() {
+        List<String> ids = HomeChoices.channelIds(this);
+        Set<String> removed = LibraryApps.loadRemoved(this);
+        int n = 0;
+        for (ChannelCatalog.Channel c : ChannelCatalog.all()) if (isOn(c, ids, removed)) n++;
+        for (LinkTiles.Link l : configLinks) if (!removed.contains(l.pkg)) n++;
+        return n;
     }
 
     private void refresh() {
@@ -118,6 +163,13 @@ public class ChannelTilesActivity extends Activity {
             String text = (selected ? "\u2713  " : "\u2003\u2003") + c.label;
             if (!LinkTiles.installed(this, c.target)) text += getString(R.string.channel_tiles_not_installed);
             rows.get(c.id).setText(text);
+        }
+        for (LinkTiles.Link l : configLinks) {
+            boolean shown = !removed.contains(l.pkg);
+            if (shown) on++;
+            String text = (shown ? "\u2713  " : "\u2003\u2003") + l.label;
+            if (!LinkTiles.installed(this, l.target)) text += getString(R.string.channel_tiles_not_installed);
+            configRows.get(l.pkg).setText(text);
         }
         count.setText(getString(R.string.channel_tiles_count, on, ChannelCatalog.MAX_SELECTED));
     }
