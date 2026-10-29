@@ -93,10 +93,9 @@
             android:clearTaskOnLaunch="true"
             android:configChanges="orientation|screenSize|keyboard|keyboardHidden|uiMode"
             android:screenOrientation="landscape">
-            <!-- priority 1000, as in cleantv-fork: with no default Home chosen yet, Android picks the highest
-                 priority among the HOME activities, so this launcher wins over a stock one that has 0. It does not
-                 override a default the owner (or the TV) has already set; see "Default home" in Launcher settings. -->
-            <intent-filter android:priority="1000">
+            <!-- Plain HOME filter (priority 0): the entry that wins Home is HomeEntryActivity below. This one stays so a
+                 default set by component (adb set-home-activity .../.MainActivity, as build-and-install does) still works. -->
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -114,6 +113,26 @@
             </intent-filter>
         </activity>
 
+        <!-- Wins Home by itself, with nothing set in Settings: HOME with priority 1000 and directBootAware, as cleantv-fork's
+             MainActivity declares. It only waits for the user to be unlocked and hands over to MainActivity (see the
+             class comment). Keep MainActivity's own HOME filter at priority 0: two filters of equal priority would make
+             Android ask which Home app to use. -->
+        <activity
+            android:name=".HomeEntryActivity"
+            android:exported="true"
+            android:directBootAware="true"
+            android:stateNotNeeded="true"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".LauncherSettingsActivity"
             android:exported="false"
