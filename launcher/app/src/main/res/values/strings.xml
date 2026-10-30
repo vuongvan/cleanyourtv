@@ -217,7 +217,7 @@
     <!-- The page the phone shows. -->
     <string name="theme_web_title">Send a theme to the TV</string>
 
-    <string name="theme_web_hint">Choose config.json, a theme .zip or pictures, type the PIN shown on the TV, then press Send.</string>
+    <string name="theme_web_hint">Choose config.json, a theme .zip or pictures, type the PIN shown on the TV, then press Send. To restore settings, send a backup .zip the same way; Download backup saves a new one.</string>
 
     <string name="theme_web_pin_label">PIN</string>
 
@@ -261,4 +261,20 @@
     <string name="channel_group_local">FPT Play: local channels</string>
     <string name="channel_group_tv360">TV360</string>
     <string name="channel_group_config">From config.json (select to show or hide)</string>
+
+    <!-- Backup and restore of the launcher settings. -->
+    <string name="backup_create">Back up settings</string>
+    <string name="backup_restore">Restore settings…</string>
+    <string name="backup_hint">A backup keeps the choices made here, the dock order, App library shortcuts, the theme and the wallpapers in one .zip on this TV (the last 10). Download it to a phone from Receive theme from a phone, and send it back there, or choose it here, to restore.</string>
+    <string name="backup_done">Backed up: %1$s</string>
+    <string name="backup_none">There is no backup on this TV yet</string>
+    <string name="backup_pick_file">Choose a file…</string>
+    <string name="backup_restore_title">Restore which backup?</string>
+    <string name="backup_restore_confirm">Restoring replaces the current settings, dock order, shortcuts and wallpapers with those in %1$s.</string>
+    <string name="backup_restore_yes">Restore</string>
+    <string name="backup_restored">Settings restored (%1$d files)</string>
+    <string name="backup_failed">Could not finish: %1$s</string>
+    <string name="backup_err_not_a_backup">This is not a backup made by this launcher</string>
+    <string name="backup_sent">Backup sent to the phone</string>
+    <string name="theme_web_download">Download backup</string>
 </resources>

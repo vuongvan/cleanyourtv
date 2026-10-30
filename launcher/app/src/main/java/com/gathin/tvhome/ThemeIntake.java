@@ -25,10 +25,17 @@ final class ThemeIntake {
     static final class Result {
         final ThemeImport.Kind kind;
         final int files;
+        /** True when it was a settings backup that was restored, not a theme. */
+        final boolean restored;
 
         Result(ThemeImport.Kind kind, int files) {
+            this(kind, files, false);
+        }
+
+        Result(ThemeImport.Kind kind, int files, boolean restored) {
             this.kind = kind;
             this.files = files;
+            this.restored = restored;
         }
     }
 
@@ -52,6 +59,9 @@ final class ThemeIntake {
                         Math.max(m.widthPixels, m.heightPixels), Math.min(m.widthPixels, m.heightPixels));
                 if (saved == null) throw new ThemeImport.ImportException(ThemeImport.Problem.UNREADABLE);
                 result = new Result(kind, 1);
+            } else if (kind == ThemeImport.Kind.ZIP && SettingsBackup.isBackup(source)) {
+                // A settings backup sent like a theme (file picker, phone page): restore it
+                result = new Result(ThemeImport.Kind.ZIP, BackupActions.restore(ctx, source), true);
             } else {
                 result = new Result(kind, ThemeImport.importFile(source, name, dir).files);
             }
@@ -131,6 +141,8 @@ final class ThemeIntake {
                 return res.getString(R.string.theme_err_unsupported);
             case STORAGE:
                 return res.getString(R.string.theme_err_storage);
+            case NOT_A_BACKUP:
+                return res.getString(R.string.backup_err_not_a_backup);
             default:
                 return res.getString(R.string.theme_err_unreadable);
         }
@@ -138,6 +150,7 @@ final class ThemeIntake {
 
     /** What to tell the owner after a successful {@link #ingest}. */
     static String summary(Resources res, Result result) {
+        if (result.restored) return res.getString(R.string.backup_restored, result.files);
         return result.kind == ThemeImport.Kind.IMAGE
                 ? res.getString(R.string.theme_import_image_ok)
                 : res.getString(R.string.theme_import_ok, result.files);

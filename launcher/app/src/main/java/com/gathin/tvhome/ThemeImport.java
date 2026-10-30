@@ -25,7 +25,7 @@ import java.util.zip.ZipInputStream;
  * folder and checked first, so a bad file changes nothing. No Android types except org.json, so it is tested on the JVM.
  */
 final class ThemeImport {
-    enum Problem { NOT_JSON, TOO_BIG, EMPTY, UNREADABLE, UNSUPPORTED, STORAGE }
+    enum Problem { NOT_JSON, TOO_BIG, EMPTY, UNREADABLE, UNSUPPORTED, STORAGE, NOT_A_BACKUP }
 
     /** Why an import was refused; {@link #problem} says which, for the message shown to the owner. */
     static final class ImportException extends IOException {

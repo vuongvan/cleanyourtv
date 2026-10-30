@@ -184,7 +184,7 @@
 
     <string name="theme_web_title">Gửi theme tới TV</string>
 
-    <string name="theme_web_hint">Chọn config.json, file .zip theme hoặc ảnh, nhập mã PIN hiện trên TV rồi bấm Gửi.</string>
+    <string name="theme_web_hint">Chọn config.json, file .zip theme hoặc ảnh, nhập mã PIN hiện trên TV rồi bấm Gửi. Muốn khôi phục cài đặt, gửi file .zip sao lưu theo cách này; nút Tải bản sao lưu sẽ lưu một bản mới.</string>
 
     <string name="theme_web_pin_label">Mã PIN</string>
 
@@ -226,4 +226,19 @@
     <string name="channel_group_local">FPT Play: kênh địa phương</string>
     <string name="channel_group_tv360">TV360</string>
     <string name="channel_group_config">Từ config.json (chọn để hiện hoặc ẩn)</string>
+
+    <string name="backup_create">Sao lưu cài đặt</string>
+    <string name="backup_restore">Khôi phục cài đặt…</string>
+    <string name="backup_hint">Bản sao lưu gồm các lựa chọn ở đây, thứ tự dock, lối tắt Thư viện ứng dụng, theme và ảnh nền, gói trong một file .zip trên TV (giữ 10 bản gần nhất). Tải về điện thoại ở mục Nhận theme từ điện thoại, rồi gửi lại ở đó hoặc chọn tại đây để khôi phục.</string>
+    <string name="backup_done">Đã sao lưu: %1$s</string>
+    <string name="backup_none">Chưa có bản sao lưu nào trên TV</string>
+    <string name="backup_pick_file">Chọn tệp…</string>
+    <string name="backup_restore_title">Khôi phục bản nào?</string>
+    <string name="backup_restore_confirm">Khôi phục sẽ thay cài đặt, thứ tự dock, lối tắt và ảnh nền hiện tại bằng nội dung trong %1$s.</string>
+    <string name="backup_restore_yes">Khôi phục</string>
+    <string name="backup_restored">Đã khôi phục cài đặt (%1$d tệp)</string>
+    <string name="backup_failed">Không hoàn tất được: %1$s</string>
+    <string name="backup_err_not_a_backup">Đây không phải bản sao lưu của launcher này</string>
+    <string name="backup_sent">Đã gửi bản sao lưu tới điện thoại</string>
+    <string name="theme_web_download">Tải bản sao lưu</string>
 </resources>

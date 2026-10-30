@@ -256,6 +256,8 @@ final class ThemeServer {
                 respond(out, 200, "OK", "text/html", page(res));
             } else if ("GET".equals(method) && "/favicon.ico".equals(path)) {
                 respond(out, 204, "No Content", "text/plain", "");
+            } else if ("GET".equals(method) && "/backup".equals(path)) {
+                download(out, headers, res);
             } else if ("POST".equals(method) && "/upload".equals(path)) {
                 upload(in, out, headers, res);
             } else {
@@ -266,14 +268,56 @@ final class ThemeServer {
         }
     }
 
+    private boolean pinMatches(String sent) {
+        return sent != null && MessageDigest.isEqual(sent.trim().getBytes(StandardCharsets.UTF_8), pin.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Sends a fresh settings backup to the phone (same PIN and the same lock after wrong PINs as an upload). The phone
+     * page saves it as a file; sending that file back through the page restores it.
+     */
+    private void download(OutputStream out, Map<String, String> headers, Resources res) throws IOException {
+        if (failedPins.get() >= MAX_FAILED_PINS) {
+            respond(out, 429, "Too Many Requests", "text/plain", res.getString(R.string.theme_web_locked));
+            return;
+        }
+        if (!pinMatches(headers.get("x-pin"))) {
+            failedPins.incrementAndGet();
+            respond(out, 403, "Forbidden", "text/plain", res.getString(R.string.theme_web_wrong_pin));
+            return;
+        }
+        File file;
+        try {
+            synchronized (importLock) {
+                file = BackupActions.create(app);
+            }
+        } catch (ThemeImport.ImportException e) {
+            respond(out, 500, "Internal Server Error", "text/plain", ThemeIntake.message(res, e.problem));
+            return;
+        }
+        if (listener != null) listener.onReceived(file.getName(), true, res.getString(R.string.backup_sent));
+        String head = "HTTP/1.1 200 OK\r\n"
+                + "Content-Type: application/zip\r\n"
+                + "Content-Length: " + file.length() + "\r\n"
+                + "Content-Disposition: attachment; filename=\"" + file.getName() + "\"\r\n"
+                + "Cache-Control: no-store\r\n"
+                + "Connection: close\r\n\r\n";
+        out.write(head.getBytes(StandardCharsets.US_ASCII));
+        try (InputStream body = new java.io.FileInputStream(file)) {
+            byte[] buffer = new byte[16 * 1024];
+            int n;
+            while ((n = body.read(buffer)) > 0) out.write(buffer, 0, n);
+        }
+        out.flush();
+    }
+
     private void upload(InputStream in, OutputStream out, Map<String, String> headers, Resources res) throws IOException {
         long length = parseLength(headers.get("content-length"));
         if (failedPins.get() >= MAX_FAILED_PINS) {
             refuse(in, out, length, 429, "Too Many Requests", null, res.getString(R.string.theme_web_locked));
             return;
         }
-        String sent = headers.get("x-pin");
-        if (sent == null || !MessageDigest.isEqual(sent.trim().getBytes(StandardCharsets.UTF_8), pin.getBytes(StandardCharsets.UTF_8))) {
+        if (!pinMatches(headers.get("x-pin"))) {
             failedPins.incrementAndGet();
             refuse(in, out, length, 403, "Forbidden", null, res.getString(R.string.theme_web_wrong_pin));
             return;
@@ -441,7 +485,8 @@ final class ThemeServer {
                 + "<label>" + esc(res.getString(R.string.theme_web_pin_label)) + "</label>"
                 + "<input id=\"pin\" inputmode=\"numeric\" autocomplete=\"off\">"
                 + "<input id=\"f\" type=\"file\" multiple accept=\".json,.zip,image/*\">"
-                + "<button id=\"go\">" + esc(res.getString(R.string.theme_web_send)) + "</button><ul id=\"log\"></ul>"
+                + "<button id=\"go\">" + esc(res.getString(R.string.theme_web_send)) + "</button>"
+                + "<button id=\"dl\">" + esc(res.getString(R.string.theme_web_download)) + "</button><ul id=\"log\"></ul>"
                 + "<script>var go=document.getElementById('go'),log=document.getElementById('log');"
                 + "function add(t){var li=document.createElement('li');li.textContent=t;log.appendChild(li);}"
                 + "go.onclick=async function(){var pin=document.getElementById('pin').value.trim();"
@@ -449,7 +494,13 @@ final class ThemeServer {
                 + "for(var i=0;i<files.length;i++){var f=files[i];add(" + sending + "+' '+f.name);"
                 + "try{var r=await fetch('/upload',{method:'POST',headers:{'X-Pin':pin,'X-File-Name':encodeURIComponent(f.name)},body:f});"
                 + "var t=await r.text();add((r.ok?'\\u2713 ':'\\u2717 ')+f.name+': '+t);if(r.status==403||r.status==429)break;}"
-                + "catch(e){add('\\u2717 '+f.name+': '+e);}}go.disabled=false;};</script></body></html>";
+                + "catch(e){add('\\u2717 '+f.name+': '+e);}}go.disabled=false;};"
+                + "document.getElementById('dl').onclick=async function(){var pin=document.getElementById('pin').value.trim();"
+                + "try{var r=await fetch('/backup',{headers:{'X-Pin':pin}});if(!r.ok){add('\\u2717 '+await r.text());return;}"
+                + "var b=await r.blob();var m=/filename=\"([^\"]+)\"/.exec(r.headers.get('Content-Disposition')||'');"
+                + "var name=m?m[1]:'launcher-backup.zip';var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;"
+                + "document.body.appendChild(a);a.click();a.remove();add('\\u2713 '+name);}catch(e){add('\\u2717 '+e);}};"
+                + "</script></body></html>";
     }
 
     private static String esc(String text) {

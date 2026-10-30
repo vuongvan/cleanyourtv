@@ -718,6 +718,17 @@ final class Config {
         return chosen >= 30 && chosen <= 100 ? chosen : theme;
     }
 
+    /**
+     * Called after a settings backup was restored: the theme files it brought back now count as the theme already seen,
+     * so the next load does not take them for a theme push and reset the choices that were restored with them.
+     */
+    static void acceptThemeFiles(Context ctx) {
+        File dir = dir(ctx);
+        if (dir == null) return;
+        String signature = fileStamp(new File(dir, FILE_NAME)) + ":" + revisionToken(new File(dir, THEME_REVISION_NAME));
+        ctx.getSharedPreferences(SETTINGS_NAME, Context.MODE_PRIVATE).edit().putString(THEME_SIGNATURE_KEY, signature).commit();
+    }
+
     private static String fileStamp(File file) {
         return file != null && file.isFile() ? file.length() + "@" + file.lastModified() : "absent";
     }

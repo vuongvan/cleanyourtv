@@ -180,6 +180,8 @@ public final class LauncherSettingsActivity extends Activity {
             reverseRow(dockChoices);
         }
         findViewById(R.id.importThemeChoice).setOnClickListener(v -> pickThemeFile());
+        findViewById(R.id.backupChoice).setOnClickListener(v -> createBackup());
+        findViewById(R.id.restoreChoice).setOnClickListener(v -> chooseBackup());
         findViewById(R.id.receiveThemeChoice).setOnClickListener(v ->
                 startActivity(new Intent(this, ThemeReceiveActivity.class)));
         wallpaperChoice = findViewById(R.id.wallpaperChoice);
@@ -409,6 +411,68 @@ public final class LauncherSettingsActivity extends Activity {
             }
         }
         Toast.makeText(this, R.string.theme_import_unavailable, Toast.LENGTH_LONG).show();
+    }
+
+    /** Makes a backup of the settings (the last ten are kept on this TV) and says which file it is. */
+    private void createBackup() {
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            String text;
+            try {
+                text = getString(R.string.backup_done, BackupActions.create(app).getName());
+            } catch (ThemeImport.ImportException e) {
+                text = getString(R.string.backup_failed, ThemeIntake.message(app.getResources(), e.problem));
+            }
+            final String shown = text;
+            runOnUiThread(() -> {
+                if (!isFinishing() && !isDestroyed()) Toast.makeText(this, shown, Toast.LENGTH_LONG).show();
+            });
+        }, "backup-create").start();
+    }
+
+    /** Lists the backups kept on this TV, newest first, and a way to choose a file from storage instead. */
+    private void chooseBackup() {
+        final List<File> backups = BackupActions.list(this);
+        if (backups.isEmpty()) {
+            Toast.makeText(this, R.string.backup_none, Toast.LENGTH_SHORT).show();
+        }
+        String[] labels = new String[backups.size() + 1];
+        for (int i = 0; i < backups.size(); i++) labels[i] = backups.get(i).getName();
+        labels[backups.size()] = getString(R.string.backup_pick_file);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.backup_restore_title)
+                .setItems(labels, (dialog, which) -> {
+                    if (which == backups.size()) {
+                        pickThemeFile();   // a backup zip chosen here is recognised and restored (ThemeIntake)
+                        return;
+                    }
+                    final File chosen = backups.get(which);
+                    new AlertDialog.Builder(this)
+                            .setMessage(getString(R.string.backup_restore_confirm, chosen.getName()))
+                            .setPositiveButton(R.string.backup_restore_yes, (d, w) -> restoreBackup(chosen))
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void restoreBackup(File zip) {
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            String text;
+            try {
+                text = getString(R.string.backup_restored, BackupActions.restore(app, zip));
+            } catch (ThemeImport.ImportException e) {
+                text = getString(R.string.backup_failed, ThemeIntake.message(app.getResources(), e.problem));
+            }
+            final String shown = text;
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                Toast.makeText(this, shown, Toast.LENGTH_LONG).show();
+                recreate();   // every row reads the restored choices again
+            });
+        }, "backup-restore").start();
     }
 
     /** Copies the picked file aside and puts it into the theme off the main thread, then says how it went. */
