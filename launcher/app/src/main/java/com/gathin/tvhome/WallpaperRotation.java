@@ -82,6 +82,15 @@ final class WallpaperRotation {
         return ORDER_SEQUENTIAL.equals(order) ? next(images, previous) : pick(images, previous, random);
     }
 
+    /**
+     * Whether Home's first picture is a new one. The first Home of a process (a new session) always gets a fresh
+     * pick, so the previous session's picture is never drawn only to be replaced a moment later; after that, a picture
+     * stays until it is no longer playable or the rotation is due.
+     */
+    static boolean pickAtStart(boolean newSession, File current, long changed, long now, long interval) {
+        return newSession || current == null || due(changed, now, interval);
+    }
+
     static boolean due(long previous, long now, long interval) {
         return interval > 0 && (previous == 0 || now < previous || now - previous >= interval);
     }

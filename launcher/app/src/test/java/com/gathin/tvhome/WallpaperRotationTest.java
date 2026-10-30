@@ -130,6 +130,25 @@ public class WallpaperRotationTest {
         assertTrue(WallpaperRotation.due(20 * minute, 10 * minute, 5 * minute));   // clock went back
     }
 
+    @Test
+    public void theFirstHomeOfAProcessAlwaysPicksANewPicture() {
+        long minute = 60_000L;
+        File current = new File("a.jpg");
+        // a new session picks anew even when the rotation is nowhere near due, and even with rotation off
+        assertTrue(WallpaperRotation.pickAtStart(true, current, 9 * minute, 10 * minute, 30 * minute));
+        assertTrue(WallpaperRotation.pickAtStart(true, current, 9 * minute, 10 * minute, 0));
+    }
+
+    @Test
+    public void aRebuiltHomeKeepsThePictureUnlessItIsDueOrGone() {
+        long minute = 60_000L;
+        File current = new File("a.jpg");
+        assertFalse(WallpaperRotation.pickAtStart(false, current, 9 * minute, 10 * minute, 30 * minute));
+        assertFalse(WallpaperRotation.pickAtStart(false, current, 0, 10 * minute, 0));          // rotation off: keep it
+        assertTrue(WallpaperRotation.pickAtStart(false, current, 9 * minute, 40 * minute, 30 * minute));   // due
+        assertTrue(WallpaperRotation.pickAtStart(false, null, 9 * minute, 10 * minute, 30 * minute));      // picture gone
+    }
+
     private static List<String> names(List<File> files) {
         String[] out = new String[files.size()];
         for (int i = 0; i < out.length; i++) out[i] = files.get(i).getName();

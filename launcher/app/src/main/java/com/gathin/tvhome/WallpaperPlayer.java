@@ -98,16 +98,28 @@ final class WallpaperPlayer {
         }
     }
 
+    /** False until the first WallpaperPlayer of this process has chosen its picture: that Home starts a new session. */
+    private static boolean sessionStarted;
+
     /**
      * The picture Home opens with is decoded right here, on the main thread, as the single wallpaper always was:
      * Home's first frame already has it instead of drawing the plain colour and the picture popping in later.
      * Only the later changes of a rotation decode in the background.
+     *
+     * <p>The first Home of a process (a new session) picks a new picture here, and so does a Home whose rotation is
+     * already due, instead of drawing the last session's picture first and swapping it a moment later in
+     * {@link #update()}. When Home is only rebuilt inside the same process (after Launcher settings, say) the
+     * picture on screen stays.
      */
     private void showFirst() {
         String previous = preferences.getString("image", "");
         List<File> playable = playable();
         File first = WallpaperRotation.find(playable, previous);
-        if (first == null) first = WallpaperRotation.pick(playable, previous, order, random);
+        boolean newSession = !sessionStarted;
+        sessionStarted = true;
+        boolean fresh = WallpaperRotation.pickAtStart(newSession, first, preferences.getLong("changed", 0),
+                System.currentTimeMillis(), interval);
+        if (fresh) first = WallpaperRotation.pick(playable, previous, order, random);
         while (first != null) {
             Bitmap bitmap = decode(first);
             if (bitmap != null) {
@@ -116,7 +128,7 @@ final class WallpaperPlayer {
                 root.setBackground(null);
                 displayed = first.getName();
                 showCaption(false);
-                if (!displayed.equals(previous)) {
+                if (fresh || !displayed.equals(previous)) {
                     preferences.edit().putString("image", displayed)
                             .putLong("changed", System.currentTimeMillis()).apply();
                 }
